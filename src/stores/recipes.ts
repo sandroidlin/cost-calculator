@@ -26,7 +26,7 @@ export interface Recipe {
   bartenderName: string
   glass: string
   ice: IceType
-  method: 'shake' | 'double strain shake' | 'stir' | 'blend' | 'Co2' | 'tap'
+  method: 'shake' | 'double strain shake' | 'stir' | 'blend' | 'Co2' | 'tap' | 'rolling'
   ingredients: RecipeIngredient[]
   garnishes: RecipeIngredient[]
   totalCost: number

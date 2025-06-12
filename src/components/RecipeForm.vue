@@ -83,7 +83,7 @@ onMounted(() => {
   }
 })
 
-const preparationMethods = ['shake', 'double strain shake', 'stir', 'blend', 'Co2', 'tap'] as const
+const preparationMethods = ['shake', 'double strain shake', 'stir', 'blend', 'Co2', 'tap', 'rolling'] as const
 const iceOptions = Object.keys(ICE_PRICES) as IceType[]
 
 const totalCost = computed(() => {
