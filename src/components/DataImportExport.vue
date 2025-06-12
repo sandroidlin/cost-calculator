@@ -90,11 +90,11 @@ const importData = (event: Event) => {
 
 <template>
   <div class="data-import-export">
-    <div class="button-group">
-      <button class="export-btn" @click="exportData">
+    <div class="link-group">
+      <a href="#" class="export-link" @click.prevent="exportData">
         匯出資料
-      </button>
-      <label class="import-btn">
+      </a>
+      <label class="import-link">
         匯入資料
         <input
           type="file"
@@ -113,46 +113,33 @@ const importData = (event: Event) => {
 
 <style scoped>
 .data-import-export {
-  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
-.button-group {
+.link-group {
   display: flex;
   gap: 1rem;
 }
 
-.export-btn,
-.import-btn {
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
+.export-link,
+.import-link {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-decoration: none;
   cursor: pointer;
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  transition: color 0.2s;
 }
 
-.export-btn {
-  background: var(--primary-color);
-  color: white;
-  border: none;
-}
-
-.export-btn:hover {
-  background: #e55a2a;
-}
-
-.import-btn {
-  background: white;
+.export-link:hover,
+.import-link:hover {
   color: var(--primary-color);
-  border: 1px solid var(--primary-color);
-  position: relative;
-  overflow: hidden;
 }
 
-.import-btn:hover {
-  background: #fff1ec;
+.import-link {
+  position: relative;
+  display: inline-block;
 }
 
 .file-input {
@@ -167,7 +154,7 @@ const importData = (event: Event) => {
 
 .notification {
   position: fixed;
-  top: 2rem;
+  bottom: 2rem;
   right: 2rem;
   background: var(--primary-color);
   color: white;

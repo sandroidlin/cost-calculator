@@ -1,5 +1,4 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import LandingPage from '@/components/LandingPage.vue'
 import RecipeList from '@/components/RecipeList.vue'
 import RecipeCreator from '@/components/RecipeCreator.vue'
 import IngredientsManager from '@/components/IngredientsManager.vue'
@@ -10,11 +9,6 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: LandingPage
-    },
-    {
-      path: '/recipes',
-      name: 'recipes',
       component: RecipeList
     },
     {

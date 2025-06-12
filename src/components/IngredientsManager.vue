@@ -80,6 +80,44 @@ const totalPages = computed(() =>
   Math.ceil(filteredIngredients.value.length / itemsPerPage)
 )
 
+const getPageButtons = computed(() => {
+  const totalPagesCount = totalPages.value
+  const current = currentPage.value
+  const buttons = []
+
+  // Always show first page
+  buttons.push(1)
+
+  if (totalPagesCount <= 5) {
+    // If 5 or fewer pages, show all
+    for (let i = 2; i <= totalPagesCount; i++) {
+      buttons.push(i)
+    }
+  } else {
+    // Show dots after first page if needed
+    if (current > 3) {
+      buttons.push('...')
+    }
+
+    // Show current page and one page before and after
+    for (let i = Math.max(2, current - 1); i <= Math.min(current + 1, totalPagesCount - 1); i++) {
+      buttons.push(i)
+    }
+
+    // Show dots before last page if needed
+    if (current < totalPagesCount - 2) {
+      buttons.push('...')
+    }
+
+    // Always show last page
+    if (totalPagesCount > 1) {
+      buttons.push(totalPagesCount)
+    }
+  }
+
+  return buttons
+})
+
 const changePage = (page: number) => {
   currentPage.value = page
   window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -293,28 +331,36 @@ const handleEditIngredient = (ingredient: Ingredient) => {
       </div>
     </div>
 
-    <!-- Add pagination controls -->
+    <!-- Update pagination controls -->
     <div v-if="totalPages > 1" class="pagination">
       <button 
-        class="page-btn"
+        class="page-btn nav-btn"
         :disabled="currentPage === 1"
         @click="changePage(currentPage - 1)"
+        aria-label="Previous page"
       >
         ←
       </button>
       <button 
-        v-for="page in totalPages" 
-        :key="page"
-        class="page-btn"
-        :class="{ active: currentPage === page }"
-        @click="changePage(page)"
+        v-for="pageNum in getPageButtons" 
+        :key="pageNum"
+        :class="[
+          'page-btn',
+          {
+            'active': currentPage === pageNum,
+            'ellipsis': pageNum === '...'
+          }
+        ]"
+        @click="pageNum !== '...' && changePage(pageNum as number)"
+        :disabled="pageNum === '...'"
       >
-        {{ page }}
+        {{ pageNum }}
       </button>
       <button 
-        class="page-btn"
+        class="page-btn nav-btn"
         :disabled="currentPage === totalPages"
         @click="changePage(currentPage + 1)"
+        aria-label="Next page"
       >
         →
       </button>
@@ -524,7 +570,7 @@ const handleEditIngredient = (ingredient: Ingredient) => {
 
 .ingredient-name {
   color: #333;
-  font-size: 1rem;
+  font-size: 0.875rem;
   margin: 0;
   font-weight: 500;
 }
@@ -590,16 +636,23 @@ const handleEditIngredient = (ingredient: Ingredient) => {
   justify-content: center;
   gap: 0.5rem;
   margin: 2rem 0;
+  flex-wrap: wrap;
 }
 
 .page-btn {
-  padding: 0.5rem 1rem;
+  min-width: 2.5rem;
+  height: 2.5rem;
+  padding: 0 0.75rem;
   border: 1px solid #eee;
   background: white;
   color: #666;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
 }
 
 .page-btn:hover:not(:disabled) {
@@ -616,6 +669,35 @@ const handleEditIngredient = (ingredient: Ingredient) => {
 .page-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.page-btn.ellipsis {
+  border: none;
+  background: none;
+  cursor: default;
+  padding: 0 0.25rem;
+}
+
+.page-btn.ellipsis:hover {
+  border: none;
+  color: #666;
+}
+
+.nav-btn {
+  font-weight: bold;
+}
+
+@media (max-width: 480px) {
+  .pagination {
+    gap: 0.25rem;
+  }
+
+  .page-btn {
+    min-width: 2rem;
+    height: 2rem;
+    padding: 0 0.5rem;
+    font-size: 0.75rem;
+  }
 }
 
 .plus-icon {

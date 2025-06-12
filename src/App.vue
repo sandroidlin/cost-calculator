@@ -1,11 +1,6 @@
 <script setup lang="ts">
-import { RouterLink, RouterView, useRoute } from 'vue-router'
-import { computed } from 'vue'
-import IngredientsManager from './components/IngredientsManager.vue'
-import DataImportExport from './components/DataImportExport.vue'
-
-const route = useRoute()
-const showNav = computed(() => route.path !== '/')
+import { RouterLink, RouterView } from 'vue-router'
+import Footer from './components/Footer.vue'
 </script>
 
 <template>
@@ -13,11 +8,10 @@ const showNav = computed(() => route.path !== '/')
     <header>
       <div class="header-content">
         <h1>酒譜資料庫</h1>
-        <nav v-if="showNav">
+        <nav>
           <div class="nav-links">
-            <RouterLink to="/recipes" class="nav-link">酒譜一覽</RouterLink>
+            <RouterLink to="/" class="nav-link">酒譜一覽</RouterLink>
             <RouterLink to="/ingredients" class="nav-link">材料一覽</RouterLink>
-            <DataImportExport />
           </div>
         </nav>
       </div>
@@ -26,6 +20,8 @@ const showNav = computed(() => route.path !== '/')
     <div class="main-container">
       <RouterView />
     </div>
+
+    <Footer />
   </div>
 </template>
 
@@ -146,27 +142,23 @@ nav {
 
 .main-container {
   flex: 1;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.main-container > :deep(*) {
-  max-width: 880px;
+  max-width: 1200px;
   width: 100%;
   margin: 0 auto;
   padding: 0 24px;
 }
 
 @media (min-width: 768px) {
-  .main-container > :deep(*) {
-    padding: 0 32px;
+  .main-container {
+    padding-left: 32px;
+    padding-right: 32px;
   }
 }
 
 @media (min-width: 1024px) {
-  .main-container > :deep(*) {
-    padding: 0 40px;
+  .main-container {
+    padding-left: 40px;
+    padding-right: 40px;
   }
 }
 

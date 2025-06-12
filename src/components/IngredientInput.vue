@@ -44,6 +44,11 @@ const updateAmount = (event: Event) => {
     emit('update', { ingredient: selectedIngredient.value, amount: newAmount })
   }
 }
+
+const subtotalCost = computed(() => {
+  if (!selectedIngredient.value || !amount.value) return 0
+  return selectedIngredient.value.unitPrice * amount.value
+})
 </script>
 
 <template>
@@ -74,7 +79,7 @@ const updateAmount = (event: Event) => {
           v-model.number="amount"
           type="number"
           min="0"
-          step="0.1"
+          step="1"
           @input="updateAmount($event)"
           :placeholder="selectedIngredient ? '輸入' + getIngredientUnit(selectedIngredient) + '數' : '數量'"
         >
@@ -89,6 +94,9 @@ const updateAmount = (event: Event) => {
       >
         ✕
       </button>
+    </div>
+    <div v-if="selectedIngredient && amount > 0" class="subtotal">
+      小計: ${{ subtotalCost.toFixed(2) }}
     </div>
   </div>
 </template>
@@ -202,5 +210,12 @@ input:focus {
   outline: none;
   border-color: var(--primary-color);
   box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.1);
+}
+
+.subtotal {
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 0.25rem;
+  padding-left: 0.25rem;
 }
 </style> 
