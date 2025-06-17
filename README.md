@@ -33,13 +33,30 @@ For production deployment, set `VITE_INSTANT_APP_ID` as a GitHub Actions secret 
 
 ### Database Schema
 
-The application uses the following InstantDB schema:
+The application uses the following InstantDB schema defined in `instant.schema.ts`:
 
 - **ingredients**: Single and compound ingredients with pricing
 - **recipes**: Cocktail recipes with methods and costs
 - **compound_ingredients**: Relationships for compound ingredients
 - **recipe_ingredients**: Recipe ingredient relationships
 - **$users**: User authentication and data ownership
+
+### Permissions
+
+Database permissions are configured in `instant.perms.ts` using InstantDB's Rule Language:
+
+- Users can only access their own ingredients and recipes
+- Authentication is required for all operations
+- Proper ownership validation ensures data security
+- Users cannot directly create or delete user accounts
+
+To update the schema or permissions in production:
+
+```bash
+# Use InstantDB CLI to push changes
+npx instant-cli@latest push schema
+npx instant-cli@latest push perms
+```
 
 ## Recommended IDE Setup
 
