@@ -1,0 +1,358 @@
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import { useRecipesStore } from './recipes'
+import { useAuthStore } from './auth'
+import { db } from '@/utils/instant'
+import type { Recipe } from './recipes'
+
+export type UnitType = 'ml' | 'g' | 'dash' | '份'
+export type CategoryType = '基酒' | '利口酒' | '裝飾' | '果汁果泥' | '苦精' | '酸' | '甜' | '調味料' | '其他'
+export type IngredientType = '單一材料' | '複合材料'
+
+// Base interface for common properties
+interface BaseIngredient {
+  id: number
+  name: string
+  category: CategoryType
+  type: IngredientType
+  unitPrice: number
+  totalPrice: number
+}
+
+// Interface for single ingredients
+export interface SingleIngredient extends BaseIngredient {
+  type: '單一材料'
+  amount: number
+  unit: UnitType
+}
+
+// Interface for compound ingredients
+export interface CompoundIngredient extends BaseIngredient {
+  type: '複合材料'
+  mainUnit: UnitType
+  ingredients: {
+    ingredientId: number
+    amount: number
+  }[]
+  totalAmount: number
+  instructions: string
+}
+
+export type Ingredient = SingleIngredient | CompoundIngredient
+
+export const UNIT_STEPS = {
+  'ml': 50,
+  'g': 10,
+  'dash': 1,
+  '份': 1
+} as const
+
+export const CATEGORIES: CategoryType[] = ['基酒', '利口酒', '裝飾', '果汁果泥', '苦精', '酸', '甜', '調味料', '其他']
+
+export const useIngredientsStore = defineStore('ingredients', () => {
+  const authStore = useAuthStore()
+  const ingredients = ref<Ingredient[]>([])
+  const isLoading = ref(false)
+  const error = ref<string | null>(null)
+
+  // Query ingredients from InstantDB when authenticated
+  const { isLoading: queryLoading, error: queryError, data: instantData } = computed(() => {
+    if (authStore.isAuthenticated) {
+      return db.useQuery({
+        ingredients: {}
+      })
+    }
+    return { isLoading: ref(false), error: ref(null), data: ref(null) }
+  }).value
+
+  // Sync InstantDB data to local state
+  const syncFromInstant = () => {
+    if (instantData.value?.ingredients) {
+      ingredients.value = instantData.value.ingredients.map((item: any) => {
+        const baseIngredient = {
+          id: parseInt(item.id),
+          name: item.name,
+          category: item.category as CategoryType,
+          type: item.type as IngredientType,
+          unitPrice: item.unitPrice,
+          totalPrice: item.totalPrice
+        }
+
+        if (item.type === '複合材料') {
+          return {
+            ...baseIngredient,
+            type: '複合材料' as const,
+            mainUnit: item.mainUnit as UnitType,
+            ingredients: item.compoundIngredients?.map((ci: any) => ({
+              ingredientId: ci.ingredientId,
+              amount: ci.amount
+            })) || [],
+            totalAmount: item.totalAmount,
+            instructions: item.instructions || ''
+          }
+        } else {
+          return {
+            ...baseIngredient,
+            type: '單一材料' as const,
+            amount: item.amount,
+            unit: item.unit as UnitType
+          }
+        }
+      })
+    }
+  }
+
+  // Load saved ingredients from localStorage (fallback/offline)
+  const loadSavedIngredients = () => {
+    const savedIngredients = localStorage.getItem('ingredients')
+    if (savedIngredients) {
+      const parsedIngredients = JSON.parse(savedIngredients)
+      ingredients.value = parsedIngredients.map((ing: any) => {
+        // Migrate old categories to new ones
+        let category = ing.category
+        if (category === '糖') category = '甜'
+        if (category === '香料') category = '調味料'
+        
+        if (ing.type === '複合材料') {
+          return {
+            id: ing.id,
+            name: ing.name,
+            category: category as CategoryType,
+            type: '複合材料' as const,
+            mainUnit: ing.mainUnit as UnitType,
+            ingredients: ing.ingredients,
+            totalAmount: ing.totalAmount,
+            totalPrice: ing.totalPrice,
+            unitPrice: ing.unitPrice,
+            instructions: ing.instructions
+          }
+        } else {
+          return {
+            id: ing.id,
+            name: ing.name,
+            category: category as CategoryType,
+            type: '單一材料' as const,
+            amount: ing.amount,
+            unit: ing.unit as UnitType,
+            totalPrice: ing.totalPrice,
+            unitPrice: ing.unitPrice
+          }
+        }
+      })
+      saveIngredients()
+    }
+  }
+
+  // Save ingredients to localStorage
+  const saveIngredients = () => {
+    localStorage.setItem('ingredients', JSON.stringify(ingredients.value))
+  }
+
+  // Save to InstantDB
+  const saveToInstant = async (ingredient: Ingredient) => {
+    if (!authStore.isAuthenticated) return
+
+    try {
+      const now = new Date().toISOString()
+      const baseData = {
+        name: ingredient.name,
+        category: ingredient.category,
+        type: ingredient.type,
+        unitPrice: ingredient.unitPrice,
+        totalPrice: ingredient.totalPrice,
+        updatedAt: now
+      }
+
+      if (ingredient.type === '單一材料') {
+        await db.transact(
+          db.tx.ingredients[ingredient.id].update({
+            ...baseData,
+            amount: ingredient.amount,
+            unit: ingredient.unit,
+            createdAt: now
+          })
+        )
+      } else {
+        await db.transact([
+          db.tx.ingredients[ingredient.id].update({
+            ...baseData,
+            mainUnit: ingredient.mainUnit,
+            totalAmount: ingredient.totalAmount,
+            instructions: ingredient.instructions,
+            createdAt: now
+          }),
+          // Handle compound ingredients separately
+          ...ingredient.ingredients.map(comp => 
+            db.tx.compound_ingredients[`${ingredient.id}-${comp.ingredientId}`].update({
+              ingredientId: comp.ingredientId,
+              amount: comp.amount
+            }).link({ ingredient: ingredient.id.toString() })
+          )
+        ])
+      }
+    } catch (err: any) {
+      error.value = err.message || 'Failed to save to database'
+      console.error('Failed to save ingredient to InstantDB:', err)
+    }
+  }
+
+  // Load saved ingredients when store is created
+  if (authStore.isAuthenticated) {
+    syncFromInstant()
+  } else {
+    loadSavedIngredients()
+  }
+
+  // Helper function to calculate compound ingredient details
+  const calculateCompoundDetails = (
+    compoundIngredient: Omit<CompoundIngredient, 'totalAmount' | 'totalPrice' | 'unitPrice' | 'id' | 'type'> & { type: '複合材料', totalAmount?: number }
+  ) => {
+    let calculatedTotalAmount = 0
+    let totalPrice = 0
+
+    compoundIngredient.ingredients.forEach(({ ingredientId, amount }) => {
+      const ingredient = ingredients.value.find(ing => ing.id === ingredientId)
+      if (!ingredient || ingredient.type !== '單一材料') return
+
+      // Only add to totalAmount if the unit matches mainUnit
+      if (ingredient.unit === compoundIngredient.mainUnit) {
+        calculatedTotalAmount += amount
+      }
+      
+      // Always add to total price
+      totalPrice += ingredient.unitPrice * amount
+    })
+
+    // Use override total amount if provided, otherwise use calculated amount
+    const totalAmount = compoundIngredient.totalAmount || calculatedTotalAmount
+
+    const unitPrice = totalAmount > 0 ? totalPrice / totalAmount : 0
+
+    return {
+      totalAmount,
+      totalPrice,
+      unitPrice
+    }
+  }
+
+  function addSingleIngredient(ingredient: Omit<SingleIngredient, 'id' | 'type' | 'unitPrice'>) {
+    const unitPrice = ingredient.totalPrice / ingredient.amount
+    const newIngredient: SingleIngredient = {
+      id: Date.now(),
+      type: '單一材料',
+      ...ingredient,
+      unitPrice
+    }
+    
+    ingredients.value.push(newIngredient)
+    saveIngredients()
+    
+    // Save to InstantDB if authenticated
+    if (authStore.isAuthenticated) {
+      saveToInstant(newIngredient)
+    }
+  }
+
+  function addCompoundIngredient(ingredient: Omit<CompoundIngredient, 'id' | 'totalAmount' | 'totalPrice' | 'unitPrice' | 'type'> & { totalAmount?: number }) {
+    const { totalAmount, totalPrice, unitPrice } = calculateCompoundDetails({
+      ...ingredient,
+      type: '複合材料'
+    })
+    
+    const newIngredient: CompoundIngredient = {
+      id: Date.now(),
+      type: '複合材料',
+      ...ingredient,
+      totalAmount,
+      totalPrice,
+      unitPrice,
+      instructions: ingredient.instructions
+    }
+    
+    ingredients.value.push(newIngredient)
+    saveIngredients()
+    
+    // Save to InstantDB if authenticated
+    if (authStore.isAuthenticated) {
+      saveToInstant(newIngredient)
+    }
+  }
+
+  function updateIngredient(updatedIngredient: Ingredient) {
+    const index = ingredients.value.findIndex(ingredient => ingredient.id === updatedIngredient.id)
+    if (index === -1) return
+
+    // Recalculate details if it's a compound ingredient
+    if (updatedIngredient.type === '複合材料') {
+      const details = calculateCompoundDetails(updatedIngredient)
+      updatedIngredient.totalAmount = details.totalAmount
+      updatedIngredient.totalPrice = details.totalPrice
+      updatedIngredient.unitPrice = details.unitPrice
+    } else {
+      // Recalculate unit price for single ingredients
+      updatedIngredient.unitPrice = updatedIngredient.totalPrice / updatedIngredient.amount
+    }
+
+    ingredients.value[index] = updatedIngredient
+    saveIngredients()
+    
+    // Save to InstantDB if authenticated
+    if (authStore.isAuthenticated) {
+      saveToInstant(updatedIngredient)
+    }
+  }
+
+  function removeIngredient(id: number) {
+    // Check if this ingredient is used in any recipes
+    const recipesStore = useRecipesStore()
+    const isUsedInRecipes = recipesStore.recipes.some(recipe => 
+      recipe.ingredients.some(ing => ing.ingredientId === id) ||
+      recipe.garnishes.some(ing => ing.ingredientId === id)
+    )
+
+    if (isUsedInRecipes) {
+      throw new Error('Cannot delete ingredient that is used in recipes')
+    }
+
+    // Check if this ingredient is used in any compound ingredients
+    const isUsedInCompounds = ingredients.value.some(ingredient =>
+      ingredient.type === '複合材料' && 
+      ingredient.ingredients.some(ing => ing.ingredientId === id)
+    )
+
+    if (isUsedInCompounds) {
+      throw new Error('Cannot delete ingredient that is used in compound ingredients')
+    }
+
+    ingredients.value = ingredients.value.filter(ingredient => ingredient.id !== id)
+    saveIngredients()
+    
+    // Delete from InstantDB if authenticated
+    if (authStore.isAuthenticated) {
+      db.transact(db.tx.ingredients[id].delete())
+    }
+  }
+
+  // Computed properties
+  const sortedIngredients = computed(() => {
+    return [...ingredients.value].sort((a, b) => a.name.localeCompare(b.name))
+  })
+
+  const getIngredientById = computed(() => {
+    return (id: number) => ingredients.value.find(ingredient => ingredient.id === id)
+  })
+
+  return {
+    ingredients,
+    isLoading: computed(() => queryLoading.value || isLoading.value),
+    error: computed(() => queryError.value?.message || error.value),
+    sortedIngredients,
+    getIngredientById,
+    addSingleIngredient,
+    addCompoundIngredient,
+    updateIngredient,
+    removeIngredient,
+    loadSavedIngredients,
+    saveIngredients
+  }
+})
