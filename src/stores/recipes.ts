@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useAuthStore } from './auth'
+import { db } from '@/utils/instant'
 
 export const ICE_PRICES = {
   '大冰': 5,
@@ -34,9 +36,66 @@ export interface Recipe {
 }
 
 export const useRecipesStore = defineStore('recipes', () => {
+  const authStore = useAuthStore()
   const recipes = ref<Recipe[]>([])
+  const isLoading = ref(false)
+  const error = ref<string | null>(null)
 
-  // Load saved recipes from localStorage
+  // Query recipes from InstantDB when authenticated
+  const { isLoading: queryLoading, error: queryError, data: instantData } = computed(() => {
+    if (authStore.isAuthenticated) {
+      return db.useQuery({
+        recipes: {
+          recipeIngredients: {}
+        }
+      })
+    }
+    return { isLoading: ref(false), error: ref(null), data: ref(null) }
+  }).value
+
+  // Sync InstantDB data to local state
+  const syncFromInstant = () => {
+    if (instantData.value?.recipes) {
+      recipes.value = instantData.value.recipes.map((item: any) => {
+        const ingredients: RecipeIngredient[] = []
+        const garnishes: RecipeIngredient[] = []
+
+        if (item.recipeIngredients) {
+          item.recipeIngredients.forEach((ri: any) => {
+            const ingredient = {
+              id: parseInt(ri.id),
+              ingredientId: ri.ingredientId,
+              amount: ri.amount,
+              name: ri.name,
+              unit: ri.unit,
+              unitPrice: ri.unitPrice
+            }
+
+            if (ri.type === 'garnish') {
+              garnishes.push(ingredient)
+            } else {
+              ingredients.push(ingredient)
+            }
+          })
+        }
+
+        return {
+          id: parseInt(item.id),
+          name: item.name,
+          bartenderName: item.bartenderName,
+          glass: item.glass,
+          ice: item.ice as IceType,
+          method: item.method as Recipe['method'],
+          ingredients,
+          garnishes,
+          totalCost: item.totalCost,
+          status: item.status as RecipeStatus
+        }
+      })
+    }
+  }
+
+  // Load saved recipes from localStorage (fallback/offline)
   const loadSavedRecipes = () => {
     const savedRecipes = localStorage.getItem('recipes')
     if (savedRecipes) {
@@ -54,16 +113,76 @@ export const useRecipesStore = defineStore('recipes', () => {
     localStorage.setItem('recipes', JSON.stringify(recipes.value))
   }
 
+  // Save to InstantDB
+  const saveToInstant = async (recipe: Recipe) => {
+    if (!authStore.isAuthenticated) return
+
+    try {
+      const now = new Date().toISOString()
+      
+      // Save recipe
+      await db.transact([
+        db.tx.recipes[recipe.id].update({
+          name: recipe.name,
+          bartenderName: recipe.bartenderName,
+          glass: recipe.glass,
+          ice: recipe.ice,
+          method: recipe.method,
+          totalCost: recipe.totalCost,
+          status: recipe.status,
+          createdAt: now,
+          updatedAt: now
+        }),
+        // Save recipe ingredients
+        ...recipe.ingredients.map((ingredient, index) =>
+          db.tx.recipe_ingredients[`${recipe.id}-ingredient-${index}`].update({
+            ingredientId: ingredient.ingredientId,
+            amount: ingredient.amount,
+            name: ingredient.name,
+            unit: ingredient.unit,
+            unitPrice: ingredient.unitPrice,
+            type: 'ingredient'
+          }).link({ recipe: recipe.id.toString() })
+        ),
+        // Save garnishes
+        ...recipe.garnishes.map((garnish, index) =>
+          db.tx.recipe_ingredients[`${recipe.id}-garnish-${index}`].update({
+            ingredientId: garnish.ingredientId,
+            amount: garnish.amount,
+            name: garnish.name,
+            unit: garnish.unit,
+            unitPrice: garnish.unitPrice,
+            type: 'garnish'
+          }).link({ recipe: recipe.id.toString() })
+        )
+      ])
+    } catch (err: any) {
+      error.value = err.message || 'Failed to save to database'
+      console.error('Failed to save recipe to InstantDB:', err)
+    }
+  }
+
   // Load saved recipes when store is created
-  loadSavedRecipes()
+  if (authStore.isAuthenticated) {
+    syncFromInstant()
+  } else {
+    loadSavedRecipes()
+  }
 
   function addRecipe(recipe: Omit<Recipe, 'id' | 'status'> & { status?: RecipeStatus }) {
-    recipes.value.push({
+    const newRecipe: Recipe = {
       ...recipe,
       id: Date.now(),
       status: recipe.status || 'complete'
-    })
+    }
+    
+    recipes.value.push(newRecipe)
     saveRecipes()
+    
+    // Save to InstantDB if authenticated
+    if (authStore.isAuthenticated) {
+      saveToInstant(newRecipe)
+    }
   }
 
   function updateRecipe(updatedRecipe: Recipe) {
@@ -77,19 +196,31 @@ export const useRecipesStore = defineStore('recipes', () => {
 
     recipes.value[index] = updatedRecipe
     saveRecipes()
+    
+    // Save to InstantDB if authenticated
+    if (authStore.isAuthenticated) {
+      saveToInstant(updatedRecipe)
+    }
   }
 
   function removeRecipe(id: number) {
     recipes.value = recipes.value.filter(recipe => recipe.id !== id)
     saveRecipes()
+    
+    // Delete from InstantDB if authenticated
+    if (authStore.isAuthenticated) {
+      db.transact(db.tx.recipes[id].delete())
+    }
   }
 
   return {
     recipes,
+    isLoading: computed(() => queryLoading.value || isLoading.value),
+    error: computed(() => queryError.value?.message || error.value),
     addRecipe,
     updateRecipe,
     removeRecipe,
     loadSavedRecipes,
     saveRecipes
   }
-}) 
+})

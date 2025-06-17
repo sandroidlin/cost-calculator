@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import Footer from './components/Footer.vue'
+import AuthLogin from './components/AuthLogin.vue'
+
+const authStore = useAuthStore()
 </script>
 
 <template>
@@ -13,12 +17,27 @@ import Footer from './components/Footer.vue'
             <RouterLink to="/" class="nav-link">酒譜一覽</RouterLink>
             <RouterLink to="/ingredients" class="nav-link">材料一覽</RouterLink>
           </div>
+          <div v-if="authStore.isAuthenticated" class="user-info">
+            <span class="user-email">{{ authStore.user?.email }}</span>
+            <button @click="authStore.signOut()" class="sign-out-btn">Sign Out</button>
+          </div>
         </nav>
       </div>
     </header>
 
     <div class="main-container">
-      <RouterView />
+      <div v-if="authStore.isLoading" class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>Loading...</p>
+      </div>
+      
+      <div v-else-if="!authStore.isAuthenticated" class="auth-required">
+        <AuthLogin />
+      </div>
+      
+      <div v-else>
+        <RouterView />
+      </div>
     </div>
 
     <Footer />
@@ -78,6 +97,36 @@ h1 {
 
 nav {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.875rem;
+}
+
+.user-email {
+  color: #666;
+}
+
+.sign-out-btn {
+  padding: 0.25rem 0.75rem;
+  background: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.sign-out-btn:hover {
+  background: #d32f2f;
 }
 
 .nav-links {
@@ -127,6 +176,33 @@ nav {
 :deep(.data-import-export) {
   padding: 0;
   margin-left: 1rem;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  gap: 1rem;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #2196f3;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.auth-required {
+  min-height: 60vh;
 }
 
 :deep(.data-import-export .button-group) {
