@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useAuthStore } from './auth'
 import { db } from '@/utils/instant'
 
@@ -162,7 +162,44 @@ export const useRecipesStore = defineStore('recipes', () => {
     }
   }
 
-  // Load saved recipes when store is created
+  // Migration function to move localStorage data to InstantDB
+  const migrateLocalDataToInstant = async () => {
+    const localData = localStorage.getItem('recipes')
+    if (localData && authStore.isAuthenticated) {
+      try {
+        const parsedData = JSON.parse(localData) as Recipe[]
+        for (const recipe of parsedData) {
+          await saveToInstant(recipe)
+        }
+      } catch (error) {
+        console.error('Failed to migrate recipes to InstantDB:', error)
+      }
+    }
+  }
+
+  // Migration function to cache InstantDB data to localStorage
+  const cacheInstantDataLocally = () => {
+    if (recipes.value.length > 0) {
+      localStorage.setItem('recipes', JSON.stringify(recipes.value))
+    }
+  }
+
+  // Watch for authentication state changes and handle data migration
+  watch(() => authStore.isAuthenticated, async (isAuth, wasAuth) => {
+    if (isAuth && !wasAuth) {
+      // User just signed in - migrate localStorage data to InstantDB
+      await migrateLocalDataToInstant()
+      // Then sync from InstantDB to get the latest data
+      syncFromInstant()
+    } else if (!isAuth && wasAuth) {
+      // User just signed out - cache current data to localStorage
+      cacheInstantDataLocally()
+      // Then load from localStorage
+      loadSavedRecipes()
+    }
+  }, { immediate: false })
+
+  // Initial load based on authentication state
   if (authStore.isAuthenticated) {
     syncFromInstant()
   } else {
@@ -213,6 +250,21 @@ export const useRecipesStore = defineStore('recipes', () => {
     }
   }
 
+  // Import data method that handles both storage backends
+  const importData = async (newRecipes: Recipe[]) => {
+    recipes.value = newRecipes
+
+    if (authStore.isAuthenticated) {
+      // Save to InstantDB when authenticated
+      for (const recipe of newRecipes) {
+        await saveToInstant(recipe)
+      }
+    } else {
+      // Save to localStorage when not authenticated
+      saveRecipes()
+    }
+  }
+
   return {
     recipes,
     isLoading: computed(() => queryLoading.value || isLoading.value),
@@ -221,6 +273,7 @@ export const useRecipesStore = defineStore('recipes', () => {
     updateRecipe,
     removeRecipe,
     loadSavedRecipes,
-    saveRecipes
+    saveRecipes,
+    importData
   }
 })

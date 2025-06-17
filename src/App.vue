@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import Footer from './components/Footer.vue'
 import AuthLogin from './components/AuthLogin.vue'
 
 const authStore = useAuthStore()
+const showAuthDialog = ref(false)
 </script>
 
 <template>
@@ -31,11 +33,23 @@ const authStore = useAuthStore()
         <p>Loading...</p>
       </div>
       
-      <div v-else-if="!authStore.isAuthenticated" class="auth-required">
-        <AuthLogin />
-      </div>
-      
       <div v-else>
+        <!-- Auth banner for offline users -->
+        <div v-if="!authStore.isAuthenticated" class="offline-banner">
+          <div class="offline-message">
+            <span>📴 離線模式 - 資料僅儲存在本地端</span>
+            <button @click="showAuthDialog = true" class="auth-suggestion-btn">登入以同步資料</button>
+          </div>
+        </div>
+        
+        <!-- Auth dialog overlay -->
+        <div v-if="showAuthDialog && !authStore.isAuthenticated" class="auth-overlay" @click="showAuthDialog = false">
+          <div class="auth-dialog" @click.stop>
+            <button class="close-auth" @click="showAuthDialog = false">×</button>
+            <AuthLogin />
+          </div>
+        </div>
+        
         <RouterView />
       </div>
     </div>
@@ -203,6 +217,85 @@ nav {
 
 .auth-required {
   min-height: 60vh;
+}
+
+.offline-banner {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.offline-message {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+.auth-suggestion-btn {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.auth-suggestion-btn:hover {
+  background: #e55a2e;
+}
+
+.auth-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.auth-dialog {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 400px;
+  width: 90%;
+  position: relative;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.close-auth {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.close-auth:hover {
+  background: #f5f5f5;
 }
 
 :deep(.data-import-export .button-group) {

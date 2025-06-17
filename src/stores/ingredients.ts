@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRecipesStore } from './recipes'
 import { useAuthStore } from './auth'
 import { db } from '@/utils/instant'
@@ -196,7 +196,44 @@ export const useIngredientsStore = defineStore('ingredients', () => {
     }
   }
 
-  // Load saved ingredients when store is created
+  // Migration function to move localStorage data to InstantDB
+  const migrateLocalDataToInstant = async () => {
+    const localData = localStorage.getItem('ingredients')
+    if (localData && authStore.isAuthenticated) {
+      try {
+        const parsedData = JSON.parse(localData) as Ingredient[]
+        for (const ingredient of parsedData) {
+          await saveToInstant(ingredient)
+        }
+      } catch (error) {
+        console.error('Failed to migrate ingredients to InstantDB:', error)
+      }
+    }
+  }
+
+  // Migration function to cache InstantDB data to localStorage
+  const cacheInstantDataLocally = () => {
+    if (ingredients.value.length > 0) {
+      localStorage.setItem('ingredients', JSON.stringify(ingredients.value))
+    }
+  }
+
+  // Watch for authentication state changes and handle data migration
+  watch(() => authStore.isAuthenticated, async (isAuth, wasAuth) => {
+    if (isAuth && !wasAuth) {
+      // User just signed in - migrate localStorage data to InstantDB
+      await migrateLocalDataToInstant()
+      // Then sync from InstantDB to get the latest data
+      syncFromInstant()
+    } else if (!isAuth && wasAuth) {
+      // User just signed out - cache current data to localStorage
+      cacheInstantDataLocally()
+      // Then load from localStorage
+      loadSavedIngredients()
+    }
+  }, { immediate: false })
+
+  // Initial load based on authentication state
   if (authStore.isAuthenticated) {
     syncFromInstant()
   } else {
@@ -342,6 +379,21 @@ export const useIngredientsStore = defineStore('ingredients', () => {
     return (id: number) => ingredients.value.find(ingredient => ingredient.id === id)
   })
 
+  // Import data method that handles both storage backends
+  const importData = async (newIngredients: Ingredient[]) => {
+    ingredients.value = newIngredients
+
+    if (authStore.isAuthenticated) {
+      // Save to InstantDB when authenticated
+      for (const ingredient of newIngredients) {
+        await saveToInstant(ingredient)
+      }
+    } else {
+      // Save to localStorage when not authenticated
+      saveIngredients()
+    }
+  }
+
   return {
     ingredients,
     isLoading: computed(() => queryLoading.value || isLoading.value),
@@ -353,6 +405,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
     updateIngredient,
     removeIngredient,
     loadSavedIngredients,
-    saveIngredients
+    saveIngredients,
+    importData
   }
 })
