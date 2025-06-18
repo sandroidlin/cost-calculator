@@ -115,14 +115,14 @@ export const useRecipesStore = defineStore('recipes', () => {
 
   // Save to InstantDB
   const saveToInstant = async (recipe: Recipe) => {
-    if (!authStore.isAuthenticated) return
+    if (!authStore.isAuthenticated || !authStore.user) return
 
     try {
       const now = new Date().toISOString()
       
       // Save recipe
       await db.transact([
-        db.tx.recipes[recipe.id].update({
+        db.tx.recipes[recipe.id.toString()].update({
           name: recipe.name,
           bartenderName: recipe.bartenderName,
           glass: recipe.glass,
@@ -132,7 +132,7 @@ export const useRecipesStore = defineStore('recipes', () => {
           status: recipe.status,
           createdAt: now,
           updatedAt: now
-        }),
+        }).link({ $user: authStore.user.id }),
         // Save recipe ingredients
         ...recipe.ingredients.map((ingredient, index) =>
           db.tx.recipe_ingredients[`${recipe.id}-ingredient-${index}`].update({
@@ -159,6 +159,7 @@ export const useRecipesStore = defineStore('recipes', () => {
     } catch (err: any) {
       error.value = err.message || 'Failed to save to database'
       console.error('Failed to save recipe to InstantDB:', err)
+      throw err // Re-throw to propagate to import handler
     }
   }
 

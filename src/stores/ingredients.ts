@@ -150,7 +150,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
 
   // Save to InstantDB
   const saveToInstant = async (ingredient: Ingredient) => {
-    if (!authStore.isAuthenticated) return
+    if (!authStore.isAuthenticated || !authStore.user) return
 
     try {
       const now = new Date().toISOString()
@@ -165,22 +165,22 @@ export const useIngredientsStore = defineStore('ingredients', () => {
 
       if (ingredient.type === '單一材料') {
         await db.transact(
-          db.tx.ingredients[ingredient.id].update({
+          db.tx.ingredients[ingredient.id.toString()].update({
             ...baseData,
             amount: ingredient.amount,
             unit: ingredient.unit,
             createdAt: now
-          })
+          }).link({ $user: authStore.user.id })
         )
       } else {
         await db.transact([
-          db.tx.ingredients[ingredient.id].update({
+          db.tx.ingredients[ingredient.id.toString()].update({
             ...baseData,
             mainUnit: ingredient.mainUnit,
             totalAmount: ingredient.totalAmount,
             instructions: ingredient.instructions,
             createdAt: now
-          }),
+          }).link({ $user: authStore.user.id }),
           // Handle compound ingredients separately
           ...ingredient.ingredients.map(comp => 
             db.tx.compound_ingredients[`${ingredient.id}-${comp.ingredientId}`].update({
@@ -193,6 +193,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
     } catch (err: any) {
       error.value = err.message || 'Failed to save to database'
       console.error('Failed to save ingredient to InstantDB:', err)
+      throw err // Re-throw to propagate to import handler
     }
   }
 

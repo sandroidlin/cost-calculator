@@ -72,7 +72,10 @@ const importData = async (event: Event) => {
       // Reset file input
       fileInput.value = ''
     } catch (error) {
-      notificationMessage.value = '匯入失敗：無效的資料格式'
+      console.error('Import error:', error)
+      notificationMessage.value = error instanceof Error ? 
+        `匯入失敗：${error.message}` : 
+        '匯入失敗：無效的資料格式'
       showNotification.value = true
       setTimeout(() => {
         showNotification.value = false
