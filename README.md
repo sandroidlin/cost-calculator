@@ -114,7 +114,31 @@ npm run lint
 
 ## Deployment
 
-The application is configured for GitHub Pages deployment. Set your InstantDB App ID as a GitHub secret named `VITE_INSTANT_APP_ID`.
+The application supports flexible deployment to various platforms:
+
+### Environment Variables
+
+```bash
+# Required: InstantDB Configuration
+VITE_INSTANT_APP_ID=your-instant-app-id-here
+
+# Optional: Base path for asset loading
+# For GitHub Pages: Set to '/repository-name/'
+# For Netlify/Vercel: Leave unset or set to '/'
+VITE_BASE_PATH=/cost-calculator/
+```
+
+### GitHub Pages
+
+For GitHub Pages deployment, set the following secrets in your repository:
+- `VITE_INSTANT_APP_ID`: Your InstantDB App ID
+- `VITE_BASE_PATH`: `/cost-calculator/` (or your repository name)
+
+### Netlify/Vercel
+
+For Netlify or Vercel deployment:
+- Set `VITE_INSTANT_APP_ID` in the environment variables
+- **Do not** set `VITE_BASE_PATH` (defaults to `/` for proper asset loading)
 
 ## License
 
