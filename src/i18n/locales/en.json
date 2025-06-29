@@ -35,7 +35,8 @@
     "codeTitle": "Enter your code",
     "codePrompt": "We sent an email to <strong>{email}</strong>. Check your email and paste the code you see.",
     "codePlaceholder": "123456...",
-    "verifyCode": "Verify Code"
+    "verifyCode": "Verify Code",
+    "backToEmail": "Back to email"
   },
   "workspace": {
     "switchWorkspace": "Switch Workspace",

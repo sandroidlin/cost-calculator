@@ -35,7 +35,8 @@
     "codeTitle": "輸入您的驗證碼",
     "codePrompt": "我們已向 <strong>{email}</strong> 發送了一封電子郵件。請檢查您的電子郵件並貼上您看到的驗證碼。",
     "codePlaceholder": "123456...",
-    "verifyCode": "驗證代碼"
+    "verifyCode": "驗證代碼",
+    "backToEmail": "返回電子郵件"
   },
   "workspace": {
     "switchWorkspace": "切換工作區",

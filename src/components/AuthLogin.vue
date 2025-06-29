@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { PhArrowLeft } from '@phosphor-icons/vue'
 
 const authStore = useAuthStore()
 const inputRef = ref<HTMLInputElement | null>(null)
@@ -87,7 +88,8 @@ const handleCodeSubmit = (e: Event) => {
           @click="authStore.sentEmail = ''" 
           class="back-btn"
         >
-          ← Back to email
+          <PhArrowLeft :size="16" />
+          {{ $t('auth.backToEmail') }}
         </button>
       </form>
     </div>
@@ -287,6 +289,10 @@ const handleCodeSubmit = (e: Event) => {
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .back-btn:hover {
