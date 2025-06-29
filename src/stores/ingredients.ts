@@ -55,19 +55,25 @@ export const useIngredientsStore = defineStore('ingredients', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  // Query ingredients from InstantDB when authenticated
-  const { isLoading: queryLoading, error: queryError, data: instantData } = computed(() => {
-    if (authStore.isAuthenticated) {
-      return db.useQuery({
-        ingredients: {}
-      })
+  // Query ingredients from InstantDB - direct reactive approach
+  const { isLoading: queryLoading, error: queryError, data: instantData } = db.useQuery({
+    ingredients: {
+      compoundIngredients: {}
     }
-    return { isLoading: ref(false), error: ref(null), data: ref(null) }
-  }).value
+  })
+
+  console.log('📊 Query setup complete, current state:', {
+    loading: queryLoading.value,
+    error: queryError.value,
+    data: instantData.value,
+    authenticated: authStore.isAuthenticated
+  })
 
   // Sync InstantDB data to local state
   const syncFromInstant = () => {
+    console.log('🔄 syncFromInstant called, instantData:', instantData.value)
     if (instantData.value?.ingredients) {
+      console.log('📥 Found ingredients data:', instantData.value.ingredients.length, 'items')
       ingredients.value = instantData.value.ingredients.map((item: any) => {
         const baseIngredient = {
           id: parseInt(item.id),
@@ -99,6 +105,9 @@ export const useIngredientsStore = defineStore('ingredients', () => {
           }
         }
       })
+      console.log('✅ Synced ingredients to local state:', ingredients.value.length, 'items')
+    } else {
+      console.log('❌ No ingredients data found in instantData')
     }
   }
 
@@ -396,6 +405,46 @@ export const useIngredientsStore = defineStore('ingredients', () => {
       saveIngredients()
     }
   }
+
+  // Watch for authentication state changes and handle data sync
+  watch(() => authStore.isAuthenticated, async (isAuth, wasAuth) => {
+    console.log('🔐 Auth state changed:', { isAuth, wasAuth })
+    if (isAuth && !wasAuth) {
+      // User just signed in - sync from InstantDB to get the latest data
+      console.log('👤 User signed in, syncing from InstantDB')
+      syncFromInstant()
+    } else if (!isAuth && wasAuth) {
+      // User just signed out - load from localStorage
+      console.log('👤 User signed out, loading from localStorage')
+      loadSavedIngredients()
+    }
+  }, { immediate: false })
+
+  // Also watch for data changes from InstantDB
+  watch(() => instantData.value, (newData) => {
+    console.log('📡 InstantDB data changed:', newData)
+    if (authStore.isAuthenticated) {
+      console.log('🔄 Authenticated, triggering sync')
+      syncFromInstant()
+    } else {
+      console.log('❌ Not authenticated, skipping sync')
+    }
+  }, { deep: true })
+
+  // Initial load based on authentication state
+  console.log('🚀 Initial load, auth state:', authStore.isAuthenticated)
+  if (authStore.isAuthenticated) {
+    console.log('👤 Authenticated on init, syncing from InstantDB')
+    syncFromInstant()
+  } else {
+    console.log('👤 Not authenticated on init, loading from localStorage')
+    loadSavedIngredients()
+  }
+
+  // Add reactive logging for ingredients count
+  watch(() => ingredients.value.length, (newCount) => {
+    console.log('📊 Ingredients count changed:', newCount)
+  })
 
   return {
     ingredients,

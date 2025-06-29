@@ -41,21 +41,34 @@ export const useRecipesStore = defineStore('recipes', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  // Query recipes from InstantDB when authenticated
-  const { isLoading: queryLoading, error: queryError, data: instantData } = computed(() => {
-    if (authStore.isAuthenticated) {
-      return db.useQuery({
-        recipes: {
-          recipeIngredients: {}
-        }
-      })
+  // Query recipes from InstantDB - direct reactive approach
+  const { isLoading: queryLoading, error: queryError, data: instantData } = db.useQuery({
+    recipes: {
+      recipeIngredients: {}
     }
-    return { isLoading: ref(false), error: ref(null), data: ref(null) }
-  }).value
+  })
+
+  console.log('🍸 Recipe query setup complete, current state:', {
+    loading: queryLoading.value,
+    error: queryError.value,
+    data: instantData.value,
+    authenticated: authStore.isAuthenticated
+  })
+
+  // Watch for InstantDB data changes
+  watch(() => instantData.value, (newData) => {
+    console.log('🍸 Recipe InstantDB data changed:', newData)
+    if (authStore.isAuthenticated && newData) {
+      console.log('🔄 Recipe data received, triggering sync')
+      syncFromInstant()
+    }
+  }, { deep: true })
 
   // Sync InstantDB data to local state
   const syncFromInstant = () => {
+    console.log('🍸 Recipe syncFromInstant called, instantData:', instantData.value)
     if (instantData.value?.recipes) {
+      console.log('📥 Found recipes data:', instantData.value.recipes.length, 'items')
       recipes.value = instantData.value.recipes.map((item: any) => {
         const ingredients: RecipeIngredient[] = []
         const garnishes: RecipeIngredient[] = []
@@ -92,6 +105,9 @@ export const useRecipesStore = defineStore('recipes', () => {
           status: item.status as RecipeStatus
         }
       })
+      console.log('✅ Synced recipes to local state:', recipes.value.length, 'items')
+    } else {
+      console.log('❌ No recipes data found in instantData')
     }
   }
 
@@ -121,8 +137,10 @@ export const useRecipesStore = defineStore('recipes', () => {
       const now = new Date().toISOString()
       
       // Save recipe
+      const recipeId = crypto.randomUUID()
+      
       await db.transact([
-        db.tx.recipes[recipe.id.toString()].update({
+        db.tx.recipes[recipeId].update({
           name: recipe.name,
           bartenderName: recipe.bartenderName,
           glass: recipe.glass,
@@ -135,25 +153,25 @@ export const useRecipesStore = defineStore('recipes', () => {
         }).link({ $user: authStore.user.id }),
         // Save recipe ingredients
         ...recipe.ingredients.map((ingredient, index) =>
-          db.tx.recipe_ingredients[`${recipe.id}-ingredient-${index}`].update({
+          db.tx.recipe_ingredients[crypto.randomUUID()].update({
             ingredientId: ingredient.ingredientId,
             amount: ingredient.amount,
             name: ingredient.name,
             unit: ingredient.unit,
             unitPrice: ingredient.unitPrice,
             type: 'ingredient'
-          }).link({ recipe: recipe.id.toString() })
+          }).link({ recipe: recipeId })
         ),
         // Save garnishes
         ...recipe.garnishes.map((garnish, index) =>
-          db.tx.recipe_ingredients[`${recipe.id}-garnish-${index}`].update({
+          db.tx.recipe_ingredients[crypto.randomUUID()].update({
             ingredientId: garnish.ingredientId,
             amount: garnish.amount,
             name: garnish.name,
             unit: garnish.unit,
             unitPrice: garnish.unitPrice,
             type: 'garnish'
-          }).link({ recipe: recipe.id.toString() })
+          }).link({ recipe: recipeId })
         )
       ])
     } catch (err: any) {
