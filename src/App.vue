@@ -797,43 +797,70 @@ h1 {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .auth-dialog {
   background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  max-width: 400px;
+  border-radius: 16px;
+  padding: 2.5rem;
+  max-width: 420px;
   width: 90%;
   position: relative;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: slideUp 0.3s ease-out;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .close-auth {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: none;
+  top: 1.25rem;
+  right: 1.25rem;
+  background: rgba(0, 0, 0, 0.05);
   border: none;
-  font-size: 1.5rem;
   cursor: pointer;
-  color: #666;
-  width: 30px;
-  height: 30px;
+  color: #6c757d;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
 }
 
 .close-auth:hover {
-  background: #f5f5f5;
+  background: rgba(0, 0, 0, 0.1);
+  color: #495057;
+  transform: scale(1.05);
 }
 
 :deep(.data-import-export .button-group) {
