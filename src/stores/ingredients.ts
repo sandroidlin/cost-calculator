@@ -76,7 +76,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
       console.log('📥 Found ingredients data:', instantData.value.ingredients.length, 'items')
       ingredients.value = instantData.value.ingredients.map((item: any) => {
         const baseIngredient = {
-          id: parseInt(item.id),
+          id: typeof item.id === 'string' ? parseInt(item.id) || Date.now() : item.id,
           name: item.name,
           category: item.category as CategoryType,
           type: item.type as IngredientType,

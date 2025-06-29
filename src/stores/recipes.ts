@@ -76,7 +76,7 @@ export const useRecipesStore = defineStore('recipes', () => {
         if (item.recipeIngredients) {
           item.recipeIngredients.forEach((ri: any) => {
             const ingredient = {
-              id: parseInt(ri.id),
+              id: typeof ri.id === 'string' ? parseInt(ri.id) || Date.now() : ri.id,
               ingredientId: ri.ingredientId,
               amount: ri.amount,
               name: ri.name,
@@ -93,7 +93,7 @@ export const useRecipesStore = defineStore('recipes', () => {
         }
 
         return {
-          id: parseInt(item.id),
+          id: typeof item.id === 'string' ? parseInt(item.id) || Date.now() : item.id,
           name: item.name,
           bartenderName: item.bartenderName,
           glass: item.glass,
