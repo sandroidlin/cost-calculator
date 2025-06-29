@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { useAuthStore } from './auth'
 import { db } from '@/utils/instant'
+import { useImportProgress } from '@/composables/useImportProgress'
 
 export const ICE_PRICES = {
   '大冰': 5,
@@ -212,17 +213,27 @@ export const useRecipesStore = defineStore('recipes', () => {
   
   // Handle migration modal actions
   const handleMigrationMerge = async () => {
-    try {
-      for (const recipe of migrationData.value) {
-        await saveToInstant(recipe)
+    const { startImport, updateProgress, completeImport } = useImportProgress()
+    
+    if (migrationData.value.length > 0) {
+      startImport('Migrating recipes to InstantDB', migrationData.value.length)
+      
+      try {
+        for (let i = 0; i < migrationData.value.length; i++) {
+          const recipe = migrationData.value[i]
+          await saveToInstant(recipe)
+          updateProgress(i + 1, recipe.name)
+        }
+        completeImport('Migration completed successfully!')
+      } catch (error) {
+        console.error('Failed to migrate recipes to InstantDB:', error)
+        completeImport('Migration completed with some errors')
       }
-    } catch (error) {
-      console.error('Failed to migrate recipes to InstantDB:', error)
-    } finally {
-      localStorage.removeItem('recipes')
-      migrationData.value = []
-      showMigrationModal.value = false
     }
+    
+    localStorage.removeItem('recipes')
+    migrationData.value = []
+    showMigrationModal.value = false
   }
   
   const handleMigrationDiscard = () => {
@@ -307,15 +318,29 @@ export const useRecipesStore = defineStore('recipes', () => {
 
   // Import data method that handles both storage backends
   const importData = async (newRecipes: Recipe[]) => {
+    const { startImport, updateProgress, completeImport } = useImportProgress()
+    
     recipes.value = newRecipes
 
-    if (authStore.isAuthenticated) {
-      // Save to InstantDB when authenticated
-      for (const recipe of newRecipes) {
-        await saveToInstant(recipe)
+    if (authStore.isAuthenticated && newRecipes.length > 0) {
+      // Show progress for InstantDB import
+      startImport('Importing recipes to InstantDB', newRecipes.length)
+      
+      try {
+        // Save to InstantDB when authenticated
+        for (let i = 0; i < newRecipes.length; i++) {
+          const recipe = newRecipes[i]
+          await saveToInstant(recipe)
+          updateProgress(i + 1, recipe.name)
+        }
+        
+        completeImport('All recipes imported successfully!')
+      } catch (error) {
+        console.error('Error importing recipes:', error)
+        completeImport('Import completed with some errors')
       }
     } else {
-      // Save to localStorage when not authenticated
+      // Save to localStorage when not authenticated (no progress needed)
       saveRecipes()
     }
   }

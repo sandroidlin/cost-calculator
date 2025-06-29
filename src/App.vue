@@ -7,11 +7,14 @@ import { useRecipesStore } from '@/stores/recipes'
 import Footer from './components/Footer.vue'
 import AuthLogin from './components/AuthLogin.vue'
 import MigrationModal from './components/MigrationModal.vue'
+import ProgressToast from './components/ProgressToast.vue'
+import { useImportProgress } from '@/composables/useImportProgress'
 
 const authStore = useAuthStore()
 const ingredientsStore = useIngredientsStore()
 const recipesStore = useRecipesStore()
 const showAuthDialog = ref(false)
+const { progressState } = useImportProgress()
 </script>
 
 <template>
@@ -74,6 +77,14 @@ const showAuthDialog = ref(false)
       item-type="recipes"
       @merge="recipesStore.handleMigrationMerge"
       @discard="recipesStore.handleMigrationDiscard"
+    />
+
+    <!-- Progress Toast -->
+    <ProgressToast
+      :visible="progressState.visible"
+      :title="progressState.title"
+      :percentage="progressState.percentage"
+      :subtitle="progressState.subtitle"
     />
 
     <Footer />

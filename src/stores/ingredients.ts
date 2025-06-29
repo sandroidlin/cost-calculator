@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { useRecipesStore } from './recipes'
 import { useAuthStore } from './auth'
 import { db } from '@/utils/instant'
+import { useImportProgress } from '@/composables/useImportProgress'
 import type { Recipe } from './recipes'
 
 export type UnitType = 'ml' | 'g' | 'dash' | '份'
@@ -239,17 +240,27 @@ export const useIngredientsStore = defineStore('ingredients', () => {
   
   // Handle migration modal actions
   const handleMigrationMerge = async () => {
-    try {
-      for (const ingredient of migrationData.value) {
-        await saveToInstant(ingredient)
+    const { startImport, updateProgress, completeImport } = useImportProgress()
+    
+    if (migrationData.value.length > 0) {
+      startImport('Migrating ingredients to InstantDB', migrationData.value.length)
+      
+      try {
+        for (let i = 0; i < migrationData.value.length; i++) {
+          const ingredient = migrationData.value[i]
+          await saveToInstant(ingredient)
+          updateProgress(i + 1, ingredient.name)
+        }
+        completeImport('Migration completed successfully!')
+      } catch (error) {
+        console.error('Failed to migrate ingredients to InstantDB:', error)
+        completeImport('Migration completed with some errors')
       }
-    } catch (error) {
-      console.error('Failed to migrate ingredients to InstantDB:', error)
-    } finally {
-      localStorage.removeItem('ingredients')
-      migrationData.value = []
-      showMigrationModal.value = false
     }
+    
+    localStorage.removeItem('ingredients')
+    migrationData.value = []
+    showMigrationModal.value = false
   }
   
   const handleMigrationDiscard = () => {
@@ -428,15 +439,29 @@ export const useIngredientsStore = defineStore('ingredients', () => {
 
   // Import data method that handles both storage backends
   const importData = async (newIngredients: Ingredient[]) => {
+    const { startImport, updateProgress, completeImport } = useImportProgress()
+    
     ingredients.value = newIngredients
 
-    if (authStore.isAuthenticated) {
-      // Save to InstantDB when authenticated
-      for (const ingredient of newIngredients) {
-        await saveToInstant(ingredient)
+    if (authStore.isAuthenticated && newIngredients.length > 0) {
+      // Show progress for InstantDB import
+      startImport('Importing ingredients to InstantDB', newIngredients.length)
+      
+      try {
+        // Save to InstantDB when authenticated
+        for (let i = 0; i < newIngredients.length; i++) {
+          const ingredient = newIngredients[i]
+          await saveToInstant(ingredient)
+          updateProgress(i + 1, ingredient.name)
+        }
+        
+        completeImport('All ingredients imported successfully!')
+      } catch (error) {
+        console.error('Error importing ingredients:', error)
+        completeImport('Import completed with some errors')
       }
     } else {
-      // Save to localStorage when not authenticated
+      // Save to localStorage when not authenticated (no progress needed)
       saveIngredients()
     }
   }
