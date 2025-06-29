@@ -42,4 +42,4 @@ import DataImportExport from './DataImportExport.vue'
     padding-right: 40px;
   }
 }
-</style> 
+</style>

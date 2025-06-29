@@ -4,11 +4,13 @@
       <div class="modal-header">
         <h3>Local Data Found</h3>
       </div>
-      
+
       <div class="modal-content">
-        <p>You have <strong>{{ itemCount }}</strong> {{ itemType }} stored locally.</p>
+        <p>
+          You have <strong>{{ itemCount }}</strong> {{ itemType }} stored locally.
+        </p>
         <p>What would you like to do with this data?</p>
-        
+
         <div class="options">
           <div class="option">
             <strong>Merge with online data</strong>
@@ -20,14 +22,10 @@
           </div>
         </div>
       </div>
-      
+
       <div class="modal-footer">
-        <button class="btn btn-secondary" @click="handleCancel">
-          Use Online Only
-        </button>
-        <button class="btn btn-primary" @click="handleMerge">
-          Merge Data
-        </button>
+        <button class="btn btn-secondary" @click="handleCancel">Use Online Only</button>
+        <button class="btn btn-primary" @click="handleMerge">Merge Data</button>
       </div>
     </div>
   </div>
@@ -79,7 +77,9 @@ const handleCancel = () => {
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
 .modal-header {

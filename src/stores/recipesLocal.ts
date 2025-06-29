@@ -2,10 +2,10 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 export const ICE_PRICES = {
-  '大冰': 5,
+  大冰: 5,
   '4x4冰': 3,
-  '小冰': 0,
-  'no冰': 0
+  小冰: 0,
+  no冰: 0,
 } as const
 
 export type IceType = keyof typeof ICE_PRICES
@@ -45,7 +45,7 @@ export const useRecipesStore = defineStore('recipes', () => {
         return {
           ...item,
           // Add status field to existing recipes if not present
-          status: item.status || 'complete'
+          status: item.status || 'complete',
         }
       })
       saveRecipes()
@@ -64,13 +64,13 @@ export const useRecipesStore = defineStore('recipes', () => {
     recipes.value.push({
       ...recipe,
       id: Date.now(),
-      status: recipe.status || 'complete'
+      status: recipe.status || 'complete',
     })
     saveRecipes()
   }
 
   function updateRecipe(updatedRecipe: Recipe) {
-    const index = recipes.value.findIndex(recipe => recipe.id === updatedRecipe.id)
+    const index = recipes.value.findIndex((recipe) => recipe.id === updatedRecipe.id)
     if (index === -1) return
 
     // Don't allow changing status from complete to draft
@@ -83,7 +83,7 @@ export const useRecipesStore = defineStore('recipes', () => {
   }
 
   function removeRecipe(id: number) {
-    recipes.value = recipes.value.filter(recipe => recipe.id !== id)
+    recipes.value = recipes.value.filter((recipe) => recipe.id !== id)
     saveRecipes()
   }
 
@@ -93,6 +93,6 @@ export const useRecipesStore = defineStore('recipes', () => {
     updateRecipe,
     removeRecipe,
     loadSavedRecipes,
-    saveRecipes
+    saveRecipes,
   }
-}) 
+})

@@ -11,7 +11,6 @@ const emit = defineEmits<{
   edit: [recipe: Recipe]
   delete: [id: number]
 }>()
-
 </script>
 
 <template>
@@ -24,14 +23,14 @@ const emit = defineEmits<{
         </div>
         <button class="close-btn" @click="emit('close')">✕</button>
       </div>
-      
+
       <div class="dialog-content">
         <div class="section">
           <h3>酒體材料</h3>
           <div class="content-card">
             <div class="ingredients-list">
-              <div 
-                v-for="ingredient in recipe.ingredients" 
+              <div
+                v-for="ingredient in recipe.ingredients"
                 :key="ingredient.id"
                 class="ingredient-item"
               >
@@ -64,11 +63,7 @@ const emit = defineEmits<{
               <div class="detail-item">
                 <span class="label">裝飾物</span>
                 <div class="garnishes-list">
-                  <div 
-                    v-for="garnish in recipe.garnishes" 
-                    :key="garnish.id"
-                    class="garnish-item"
-                  >
+                  <div v-for="garnish in recipe.garnishes" :key="garnish.id" class="garnish-item">
                     {{ garnish.name }} {{ garnish.amount }} {{ garnish.unit }}
                   </div>
                 </div>
@@ -84,18 +79,8 @@ const emit = defineEmits<{
           <span class="total-cost-value">${{ recipe.totalCost.toFixed(2) }}</span>
         </div>
         <div class="button-group">
-          <button 
-            class="edit-btn" 
-            @click="emit('edit', recipe)"
-          >
-            修改內容
-          </button>
-          <button 
-            class="delete-btn" 
-            @click="emit('delete', recipe.id)"
-          >
-            刪除酒譜
-          </button>
+          <button class="edit-btn" @click="emit('edit', recipe)">修改內容</button>
+          <button class="delete-btn" @click="emit('delete', recipe.id)">刪除酒譜</button>
         </div>
       </div>
     </div>
@@ -305,4 +290,4 @@ const emit = defineEmits<{
 .delete-btn:hover {
   background: #fff1ec;
 }
-</style> 
+</style>

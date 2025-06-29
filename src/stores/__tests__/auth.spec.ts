@@ -8,14 +8,14 @@ vi.mock('@/utils/instant', () => ({
     useAuth: () => ({
       isLoading: { value: false },
       user: { value: null },
-      error: { value: null }
+      error: { value: null },
     }),
     auth: {
       sendMagicCode: vi.fn(),
       signInWithMagicCode: vi.fn(),
-      signOut: vi.fn()
-    }
-  }
+      signOut: vi.fn(),
+    },
+  },
 }))
 
 describe('AuthStore', () => {
@@ -25,7 +25,7 @@ describe('AuthStore', () => {
 
   it('should initialize with correct default state', () => {
     const authStore = useAuthStore()
-    
+
     expect(authStore.isAuthenticated).toBe(false)
     expect(authStore.sentEmail).toBe('')
     expect(authStore.error).toBe(null)
@@ -34,14 +34,14 @@ describe('AuthStore', () => {
   it('should handle sendMagicCode', async () => {
     const authStore = useAuthStore()
     const _mockSendMagicCode = vi.fn().mockResolvedValue(undefined)
-    
+
     // Mock the db auth method
     authStore.sendMagicCode = vi.fn().mockImplementation(async (email) => {
       authStore.sentEmail = email
     })
-    
+
     await authStore.sendMagicCode('test@example.com')
-    
+
     expect(authStore.sentEmail).toBe('test@example.com')
   })
 })

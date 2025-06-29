@@ -20,52 +20,54 @@ const recipe = ref({
   name: props.initialRecipe?.name || '',
   bartenderName: props.initialRecipe?.bartenderName || '',
   glass: props.initialRecipe?.glass || '',
-  ice: props.initialRecipe?.ice || 'no冰' as IceType,
-  method: props.initialRecipe?.method || 'shake' as const,
+  ice: props.initialRecipe?.ice || ('no冰' as IceType),
+  method: props.initialRecipe?.method || ('shake' as const),
   ingredients: [] as RecipeIngredient[],
   garnishes: [] as RecipeIngredient[],
   totalCost: 0,
-  status: props.initialRecipe?.status || 'draft' as RecipeStatus
+  status: props.initialRecipe?.status || ('draft' as RecipeStatus),
 })
 
-const ingredientInputs = ref<Array<{ id: number, ingredient: Ingredient | null, amount: number }>>([])
-const garnishInputs = ref<Array<{ id: number, ingredient: Ingredient | null, amount: number }>>([])
+const ingredientInputs = ref<Array<{ id: number; ingredient: Ingredient | null; amount: number }>>(
+  [],
+)
+const garnishInputs = ref<Array<{ id: number; ingredient: Ingredient | null; amount: number }>>([])
 
 const decorationIngredients = computed(() => {
-  return props.ingredients.filter(ing => ing.category === '裝飾')
+  return props.ingredients.filter((ing) => ing.category === '裝飾')
 })
-
 
 // Initialize ingredient inputs
 onMounted(() => {
   if (props.initialRecipe && props.mode === 'edit') {
     // Load existing ingredients when editing
-    ingredientInputs.value = props.initialRecipe.ingredients.map(recipeIng => {
-      const ingredient = props.ingredients.find(ing => ing.id === recipeIng.ingredientId)
+    ingredientInputs.value = props.initialRecipe.ingredients.map((recipeIng) => {
+      const ingredient = props.ingredients.find((ing) => ing.id === recipeIng.ingredientId)
       return {
         id: recipeIng.id,
         ingredient: ingredient || null,
-        amount: recipeIng.amount
+        amount: recipeIng.amount,
       }
     })
 
     // Load existing garnishes when editing
-    garnishInputs.value = props.initialRecipe.garnishes?.map(garnish => {
-      const ingredient = props.ingredients.find(ing => ing.id === garnish.ingredientId)
-      return {
-        id: garnish.id,
-        ingredient: ingredient || null,
-        amount: garnish.amount
-      }
-    }) || []
+    garnishInputs.value =
+      props.initialRecipe.garnishes?.map((garnish) => {
+        const ingredient = props.ingredients.find((ing) => ing.id === garnish.ingredientId)
+        return {
+          id: garnish.id,
+          ingredient: ingredient || null,
+          amount: garnish.amount,
+        }
+      }) || []
   }
-  
+
   // If no ingredients or creating new recipe, add one empty input
   if (ingredientInputs.value.length === 0) {
     ingredientInputs.value.push({
       id: Date.now(),
       ingredient: null,
-      amount: 0
+      amount: 0,
     })
   }
 
@@ -74,23 +76,31 @@ onMounted(() => {
     garnishInputs.value.push({
       id: Date.now() + 1,
       ingredient: null,
-      amount: 0
+      amount: 0,
     })
   }
 })
 
-const preparationMethods = ['shake', 'double strain shake', 'stir', 'blend', 'Co2', 'tap', 'rolling'] as const
+const preparationMethods = [
+  'shake',
+  'double strain shake',
+  'stir',
+  'blend',
+  'Co2',
+  'tap',
+  'rolling',
+] as const
 const iceOptions = Object.keys(ICE_PRICES) as IceType[]
 
 const totalCost = computed(() => {
   const ingredientsCost = ingredientInputs.value.reduce((total, input) => {
     if (!input.ingredient || !input.amount) return total
-    return total + (input.amount * input.ingredient.unitPrice)
+    return total + input.amount * input.ingredient.unitPrice
   }, 0)
 
   const garnishesCost = garnishInputs.value.reduce((total, input) => {
     if (!input.ingredient || !input.amount) return total
-    return total + (input.amount * input.ingredient.unitPrice)
+    return total + input.amount * input.ingredient.unitPrice
   }, 0)
 
   const iceCost = recipe.value.ice ? ICE_PRICES[recipe.value.ice] : 0
@@ -102,16 +112,16 @@ const addNewIngredientInput = () => {
   ingredientInputs.value.push({
     id: Date.now(),
     ingredient: null,
-    amount: 0
+    amount: 0,
   })
 }
 
 const removeIngredientInput = (id: number) => {
-  ingredientInputs.value = ingredientInputs.value.filter(input => input.id !== id)
+  ingredientInputs.value = ingredientInputs.value.filter((input) => input.id !== id)
 }
 
-const updateIngredient = (id: number, data: { ingredient: Ingredient | null, amount: number }) => {
-  const input = ingredientInputs.value.find(i => i.id === id)
+const updateIngredient = (id: number, data: { ingredient: Ingredient | null; amount: number }) => {
+  const input = ingredientInputs.value.find((i) => i.id === id)
   if (input) {
     input.ingredient = data.ingredient
     input.amount = data.amount
@@ -122,16 +132,16 @@ const addNewGarnishInput = () => {
   garnishInputs.value.push({
     id: Date.now(),
     ingredient: null,
-    amount: 0
+    amount: 0,
   })
 }
 
 const removeGarnishInput = (id: number) => {
-  garnishInputs.value = garnishInputs.value.filter(input => input.id !== id)
+  garnishInputs.value = garnishInputs.value.filter((input) => input.id !== id)
 }
 
-const updateGarnish = (id: number, data: { ingredient: Ingredient | null, amount: number }) => {
-  const input = garnishInputs.value.find(i => i.id === id)
+const updateGarnish = (id: number, data: { ingredient: Ingredient | null; amount: number }) => {
+  const input = garnishInputs.value.find((i) => i.id === id)
   if (input) {
     input.ingredient = data.ingredient
     input.amount = data.amount
@@ -146,25 +156,25 @@ const saveRecipe = (status: RecipeStatus = 'draft') => {
   if (!recipe.value.name || !recipe.value.bartenderName) return
 
   const recipeIngredients: RecipeIngredient[] = ingredientInputs.value
-    .filter(input => input.ingredient && input.amount)
-    .map(input => ({
+    .filter((input) => input.ingredient && input.amount)
+    .map((input) => ({
       id: input.id,
       ingredientId: input.ingredient!.id,
       name: input.ingredient!.name,
       amount: input.amount,
       unit: getIngredientUnit(input.ingredient!),
-      unitPrice: input.ingredient!.unitPrice
+      unitPrice: input.ingredient!.unitPrice,
     }))
 
   const recipeGarnishes: RecipeIngredient[] = garnishInputs.value
-    .filter(input => input.ingredient && input.amount)
-    .map(input => ({
+    .filter((input) => input.ingredient && input.amount)
+    .map((input) => ({
       id: input.id,
       ingredientId: input.ingredient!.id,
       name: input.ingredient!.name,
       amount: input.amount,
       unit: getIngredientUnit(input.ingredient!),
-      unitPrice: input.ingredient!.unitPrice
+      unitPrice: input.ingredient!.unitPrice,
     }))
 
   // Only check for ingredients if saving as complete
@@ -179,7 +189,7 @@ const saveRecipe = (status: RecipeStatus = 'draft') => {
     ingredients: recipeIngredients,
     garnishes: recipeGarnishes,
     totalCost: totalCost.value,
-    status: finalStatus
+    status: finalStatus,
   })
 }
 </script>
@@ -198,20 +208,12 @@ const saveRecipe = (status: RecipeStatus = 'draft') => {
           <div class="form-card">
             <div class="form-group">
               <label>酒名</label>
-              <input 
-                v-model="recipe.name"
-                type="text"
-                placeholder="請輸入酒名"
-              >
+              <input v-model="recipe.name" type="text" placeholder="請輸入酒名" />
             </div>
 
             <div class="form-group">
               <label>調酒師名</label>
-              <input 
-                v-model="recipe.bartenderName"
-                type="text"
-                placeholder="請輸入調酒師名"
-              >
+              <input v-model="recipe.bartenderName" type="text" placeholder="請輸入調酒師名" />
             </div>
           </div>
         </section>
@@ -228,16 +230,12 @@ const saveRecipe = (status: RecipeStatus = 'draft') => {
                 :show-delete="ingredientInputs.length > 1"
                 :initial-ingredient="input.ingredient"
                 :initial-amount="input.amount"
-                @update="data => updateIngredient(input.id, data)"
+                @update="(data) => updateIngredient(input.id, data)"
                 @remove="removeIngredientInput(input.id)"
               />
             </div>
-            
-            <button 
-              class="add-more-btn"
-              @click="addNewIngredientInput"
-              type="button"
-            >
+
+            <button class="add-more-btn" @click="addNewIngredientInput" type="button">
               <span class="plus-icon">+</span> 新增其他材料
             </button>
           </div>
@@ -264,23 +262,14 @@ const saveRecipe = (status: RecipeStatus = 'draft') => {
           <div class="form-card">
             <div class="form-group">
               <label>杯子</label>
-              <input 
-                v-model="recipe.glass"
-                type="text"
-                placeholder="請輸入杯子種類"
-              >
+              <input v-model="recipe.glass" type="text" placeholder="請輸入杯子種類" />
             </div>
 
             <div class="form-group">
               <label>冰塊</label>
               <div class="ice-options">
                 <label class="radio-label" v-for="ice in iceOptions" :key="ice">
-                  <input 
-                    type="radio" 
-                    :value="ice" 
-                    v-model="recipe.ice"
-                    name="ice-type"
-                  >
+                  <input type="radio" :value="ice" v-model="recipe.ice" name="ice-type" />
                   <span class="radio-text">{{ ice }}</span>
                 </label>
               </div>
@@ -296,16 +285,12 @@ const saveRecipe = (status: RecipeStatus = 'draft') => {
                   :show-delete="garnishInputs.length > 1"
                   :initial-ingredient="input.ingredient"
                   :initial-amount="input.amount"
-                  @update="data => updateGarnish(input.id, data)"
+                  @update="(data) => updateGarnish(input.id, data)"
                   @remove="removeGarnishInput(input.id)"
                 />
               </div>
-              
-              <button 
-                class="add-more-btn"
-                @click="addNewGarnishInput"
-                type="button"
-              >
+
+              <button class="add-more-btn" @click="addNewGarnishInput" type="button">
                 <span class="plus-icon">+</span> 新增其他裝飾物
               </button>
             </div>
@@ -318,18 +303,21 @@ const saveRecipe = (status: RecipeStatus = 'draft') => {
           成本 <span class="cost-amount">${{ totalCost.toFixed(2) }}</span>
         </div>
         <div class="button-group">
-          <button 
+          <button
             v-if="mode === 'create' || (mode === 'edit' && initialRecipe?.status === 'draft')"
-            class="draft-btn" 
+            class="draft-btn"
             @click="saveRecipe('draft')"
           >
             {{ mode === 'edit' && initialRecipe?.status === 'draft' ? '暫存' : '暫存' }}
           </button>
-          <button 
-            class="submit-btn" 
-            @click="saveRecipe('complete')"
-          >
-            {{ mode === 'edit' && initialRecipe?.status === 'draft' ? '完成酒譜' : (mode === 'create' ? '新增' : '更新') }}
+          <button class="submit-btn" @click="saveRecipe('complete')">
+            {{
+              mode === 'edit' && initialRecipe?.status === 'draft'
+                ? '完成酒譜'
+                : mode === 'create'
+                  ? '新增'
+                  : '更新'
+            }}
           </button>
         </div>
       </div>
@@ -493,7 +481,7 @@ const saveRecipe = (status: RecipeStatus = 'draft') => {
   cursor: pointer;
 }
 
-.radio-label input[type="radio"] {
+.radio-label input[type='radio'] {
   appearance: none;
   width: 1.125rem;
   height: 1.125rem;
@@ -504,11 +492,11 @@ const saveRecipe = (status: RecipeStatus = 'draft') => {
   cursor: pointer;
 }
 
-.radio-label input[type="radio"]:checked {
+.radio-label input[type='radio']:checked {
   border-color: var(--primary-color);
 }
 
-.radio-label input[type="radio"]:checked::after {
+.radio-label input[type='radio']:checked::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -671,4 +659,4 @@ const saveRecipe = (status: RecipeStatus = 'draft') => {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.1);
 }
-</style> 
+</style>

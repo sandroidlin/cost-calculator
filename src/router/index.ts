@@ -9,19 +9,22 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: RecipeList
+      component: RecipeList,
+      props: (route) => ({ workspace: route.query.workspace }),
     },
     {
       path: '/recipes/new',
       name: 'new-recipe',
-      component: RecipeCreator
+      component: RecipeCreator,
+      props: (route) => ({ workspace: route.query.workspace }),
     },
     {
       path: '/ingredients',
       name: 'ingredients',
-      component: IngredientsManager
-    }
-  ]
+      component: IngredientsManager,
+      props: (route) => ({ workspace: route.query.workspace }),
+    },
+  ],
 })
 
 export default router

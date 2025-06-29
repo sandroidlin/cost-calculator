@@ -21,7 +21,7 @@ const newRecipe = ref({
   ice: '' as IceType,
   method: 'shake' as const,
   garnishes: [] as RecipeIngredient[],
-  ingredients: [] as RecipeIngredient[]
+  ingredients: [] as RecipeIngredient[],
 })
 
 const searchQuery = ref('')
@@ -31,16 +31,16 @@ const amount = ref('')
 const selectedUnit = ref(unitOptions[0])
 
 const filteredIngredients = computed(() => {
-  return ingredients.value.filter((ing: Ingredient) => 
-    ing.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+  return ingredients.value.filter((ing: Ingredient) =>
+    ing.name.toLowerCase().includes(searchQuery.value.toLowerCase()),
   )
 })
 
 const recipeTotalCost = computed(() => {
   const ingredientsCost = newRecipe.value.ingredients.reduce((total, ing) => {
-    return total + (ing.unitPrice * ing.amount)
+    return total + ing.unitPrice * ing.amount
   }, 0)
-  
+
   const iceCost = newRecipe.value.ice ? ICE_PRICES[newRecipe.value.ice] : 0
   return ingredientsCost + iceCost
 })
@@ -49,7 +49,6 @@ const getIngredientUnit = (ingredient: Ingredient): string => {
   return ingredient.type === '單一材料' ? ingredient.unit : ingredient.mainUnit
 }
 
-
 const addIngredientToRecipe = () => {
   if (!selectedIngredient.value || !amount.value) return
 
@@ -57,14 +56,14 @@ const addIngredientToRecipe = () => {
   if (!ingredient) return
 
   const unit = getIngredientUnit(ingredient)
-  
+
   newRecipe.value.ingredients.push({
     id: Date.now(),
     ingredientId: ingredient.id,
     amount: parseFloat(amount.value),
     name: ingredient.name,
     unit,
-    unitPrice: ingredient.unitPrice
+    unitPrice: ingredient.unitPrice,
   })
 
   // Reset selection
@@ -75,7 +74,13 @@ const addIngredientToRecipe = () => {
 }
 
 const removeIngredientFromRecipe = (id: number) => {
-  newRecipe.value.ingredients = newRecipe.value.ingredients.filter(ing => ing.id !== id)
+  newRecipe.value.ingredients = newRecipe.value.ingredients.filter((ing) => ing.id !== id)
+}
+
+const selectIngredient = (ingredient: Ingredient) => {
+  selectedIngredient.value = ingredient.id
+  showDropdown.value = false
+  searchQuery.value = ingredient.name
 }
 
 const saveRecipe = () => {
@@ -89,7 +94,7 @@ const saveRecipe = () => {
     method: newRecipe.value.method,
     ingredients: [...newRecipe.value.ingredients],
     garnishes: [...newRecipe.value.garnishes],
-    totalCost: recipeTotalCost.value
+    totalCost: recipeTotalCost.value,
   })
 
   // Reset form
@@ -100,7 +105,7 @@ const saveRecipe = () => {
     ice: '' as IceType,
     method: 'shake',
     garnishes: [],
-    ingredients: []
+    ingredients: [],
   }
 }
 </script>
@@ -120,7 +125,7 @@ const saveRecipe = () => {
             type="text"
             required
             placeholder="請輸入姓名"
-          >
+          />
         </div>
 
         <div class="form-group">
@@ -131,13 +136,13 @@ const saveRecipe = () => {
             type="text"
             required
             placeholder="請輸入姓名"
-          >
+          />
         </div>
       </div>
 
       <div class="ingredients-section">
         <h3>酒體材料</h3>
-        
+
         <div class="ingredient-selector">
           <div class="form-group ingredient-search">
             <label>材料：</label>
@@ -147,14 +152,14 @@ const saveRecipe = () => {
                 @focus="showDropdown = true"
                 type="text"
                 placeholder="請選擇材料"
-              >
+              />
               <div v-if="showDropdown" class="dropdown-list">
                 <div
                   v-for="ingredient in filteredIngredients"
                   :key="ingredient.id"
                   class="dropdown-item"
-                  :class="{ 'selected': selectedIngredient === ingredient.id }"
-                  @click="selectedIngredient = ingredient.id; showDropdown = false; searchQuery = ingredient.name"
+                  :class="{ selected: selectedIngredient === ingredient.id }"
+                  @click="selectIngredient(ingredient)"
                 >
                   {{ ingredient.name }}
                 </div>
@@ -163,13 +168,7 @@ const saveRecipe = () => {
           </div>
 
           <div class="form-group amount-input">
-            <input
-              v-model="amount"
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="輸入數量"
-            >
+            <input v-model="amount" type="number" step="0.01" min="0" placeholder="輸入數量" />
           </div>
 
           <div class="form-group unit-select">
@@ -180,8 +179,8 @@ const saveRecipe = () => {
             </select>
           </div>
 
-          <button 
-            type="button" 
+          <button
+            type="button"
             @click="addIngredientToRecipe"
             :disabled="!selectedIngredient || !amount"
             class="add-ingredient-btn"
@@ -206,8 +205,8 @@ const saveRecipe = () => {
                 <td>{{ ingredient.amount }} {{ ingredient.unit }}</td>
                 <td>${{ (ingredient.amount * ingredient.unitPrice).toFixed(2) }}</td>
                 <td>
-                  <button 
-                    @click="removeIngredientFromRecipe(ingredient.id)" 
+                  <button
+                    @click="removeIngredientFromRecipe(ingredient.id)"
                     class="delete-btn"
                     type="button"
                   >
@@ -225,12 +224,7 @@ const saveRecipe = () => {
         <h3>造型</h3>
         <div class="form-group">
           <label for="glass">杯子：</label>
-          <input
-            id="glass"
-            v-model="newRecipe.glass"
-            type="text"
-            required
-          >
+          <input id="glass" v-model="newRecipe.glass" type="text" required />
         </div>
 
         <div class="form-group">
@@ -245,11 +239,7 @@ const saveRecipe = () => {
 
         <div class="form-group">
           <label for="garnish">裝飾物：</label>
-          <input
-            id="garnish"
-            v-model="newRecipe.garnishes[0].name"
-            type="text"
-          >
+          <input id="garnish" v-model="newRecipe.garnishes[0].name" type="text" />
         </div>
       </div>
 
@@ -257,8 +247,8 @@ const saveRecipe = () => {
         <div class="total-cost">
           成本：<strong>${{ recipeTotalCost.toFixed(2) }}</strong>
         </div>
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           class="save-recipe-btn"
           :disabled="!newRecipe.name || newRecipe.ingredients.length === 0"
         >
@@ -405,7 +395,8 @@ table {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-th, td {
+th,
+td {
   padding: 1rem;
   text-align: left;
   border-bottom: 1px solid #eee;
@@ -480,4 +471,4 @@ td {
   background: #ccc;
   cursor: not-allowed;
 }
-</style> 
+</style>

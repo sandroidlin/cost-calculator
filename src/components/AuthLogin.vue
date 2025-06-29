@@ -23,20 +23,18 @@ const handleCodeSubmit = (e: Event) => {
 <template>
   <div class="auth-container">
     <div class="auth-card">
-      <div v-if="authStore.isLoading" class="loading">
-        Loading...
-      </div>
-      
+      <div v-if="authStore.isLoading" class="loading">Loading...</div>
+
       <div v-else-if="authStore.error" class="error">
         {{ authStore.error }}
         <button @click="authStore.clearError()" class="retry-btn">Try Again</button>
       </div>
-      
+
       <div v-else-if="authStore.isAuthenticated" class="authenticated">
         <h2>Welcome, {{ authStore.user?.email }}!</h2>
         <button @click="authStore.signOut()" class="sign-out-btn">Sign Out</button>
       </div>
-      
+
       <div v-else-if="!authStore.sentEmail" class="email-step">
         <form @submit="handleEmailSubmit">
           <h2>Let's log you in</h2>
@@ -51,11 +49,14 @@ const handleCodeSubmit = (e: Event) => {
           <button type="submit" class="submit-btn">Send Code</button>
         </form>
       </div>
-      
+
       <div v-else class="code-step">
         <form @submit="handleCodeSubmit">
           <h2>Enter your code</h2>
-          <p>We sent an email to <strong>{{ authStore.sentEmail }}</strong>. Check your email and paste the code you see.</p>
+          <p>
+            We sent an email to <strong>{{ authStore.sentEmail }}</strong
+            >. Check your email and paste the code you see.
+          </p>
           <input
             ref="inputRef"
             type="text"
@@ -87,7 +88,7 @@ const handleCodeSubmit = (e: Event) => {
   border: 1px solid #ddd;
   border-radius: 8px;
   background: white;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .loading {

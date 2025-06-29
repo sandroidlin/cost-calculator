@@ -23,7 +23,7 @@ const exportData = () => {
     ingredients: ingredientsStore.ingredients,
     recipes: recipesStore.recipes,
     version: '1.0',
-    exportDate: new Date().toISOString()
+    exportDate: new Date().toISOString(),
   }
 
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
@@ -53,9 +53,14 @@ const importData = async (event: Event) => {
   reader.onload = async (e) => {
     try {
       const data = JSON.parse(e.target?.result as string) as ExportData
-      
+
       // Validate data structure
-      if (!data.ingredients || !data.recipes || !Array.isArray(data.ingredients) || !Array.isArray(data.recipes)) {
+      if (
+        !data.ingredients ||
+        !data.recipes ||
+        !Array.isArray(data.ingredients) ||
+        !Array.isArray(data.recipes)
+      ) {
         throw new Error('無效的資料格式')
       }
 
@@ -73,9 +78,8 @@ const importData = async (event: Event) => {
       fileInput.value = ''
     } catch (error) {
       console.error('Import error:', error)
-      notificationMessage.value = error instanceof Error ? 
-        `匯入失敗：${error.message}` : 
-        '匯入失敗：無效的資料格式'
+      notificationMessage.value =
+        error instanceof Error ? `匯入失敗：${error.message}` : '匯入失敗：無效的資料格式'
       showNotification.value = true
       setTimeout(() => {
         showNotification.value = false
@@ -90,17 +94,10 @@ const importData = async (event: Event) => {
 <template>
   <div class="data-import-export">
     <div class="link-group">
-      <a href="#" class="export-link" @click.prevent="exportData">
-        匯出資料
-      </a>
+      <a href="#" class="export-link" @click.prevent="exportData"> 匯出資料 </a>
       <label class="import-link">
         匯入資料
-        <input
-          type="file"
-          accept=".json"
-          @change="importData"
-          class="file-input"
-        >
+        <input type="file" accept=".json" @change="importData" class="file-input" />
       </label>
     </div>
 
@@ -174,4 +171,4 @@ const importData = async (event: Event) => {
     opacity: 1;
   }
 }
-</style> 
+</style>

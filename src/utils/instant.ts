@@ -13,7 +13,7 @@ if (!APP_ID) {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const db: any = init({
   appId: APP_ID,
-  schema
+  schema,
 })
 
 export type { AppSchema }
