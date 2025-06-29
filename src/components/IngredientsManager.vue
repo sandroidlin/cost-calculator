@@ -13,7 +13,9 @@ import SingleIngredientForm from './SingleIngredientForm.vue'
 import CompoundIngredientForm from './CompoundIngredientForm.vue'
 import SingleIngredientDetailDialog from './SingleIngredientDetailDialog.vue'
 import CompoundIngredientDetailDialog from './CompoundIngredientDetailDialog.vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const ingredientsStore = useIngredientsStore()
 const { ingredients } = storeToRefs(ingredientsStore)
 
@@ -134,7 +136,7 @@ const handleSubmit = (ingredient: SingleIngredient | CompoundIngredient) => {
     ingredientsStore.addCompoundIngredient(rest)
   }
 
-  notificationMessage.value = `${ingredient.name}已成功加入材料資料庫`
+  notificationMessage.value = t('ingredient.addedSuccess', { name: ingredient.name })
   showNotification.value = true
   setTimeout(() => {
     showNotification.value = false
@@ -148,7 +150,7 @@ const handleDelete = (id: number) => {
   try {
     ingredientsStore.removeIngredient(id)
     showDialog.value = false
-    notificationMessage.value = '材料已成功刪除'
+    notificationMessage.value = t('ingredient.deletedSuccess')
     showNotification.value = true
     setTimeout(() => {
       showNotification.value = false
@@ -212,7 +214,7 @@ const saveEdit = (updatedIngredient: Ingredient) => {
 
   ingredientsStore.updateIngredient(updatedIngredient)
 
-  notificationMessage.value = `${updatedIngredient.name}已成功更新`
+  notificationMessage.value = t('ingredient.updatedSuccess', { name: updatedIngredient.name })
   showNotification.value = true
   setTimeout(() => {
     showNotification.value = false
@@ -235,19 +237,19 @@ const handleEditIngredient = (ingredient: Ingredient) => {
 <template>
   <div class="ingredients-manager">
     <div class="header">
-      <h2>材料一覽</h2>
+      <h2>{{ $t('nav.ingredients') }}</h2>
       <div class="button-group">
         <button class="add-btn" @click="showCompoundIngredientForm = true">
-          <span class="plus-icon">+</span> 新增複合材料
+          <span class="plus-icon">+</span> {{ $t('ingredient.addCompoundIngredient') }}
         </button>
         <button class="add-btn" @click="showCreateDialog = true">
-          <span class="plus-icon">+</span> 新增單一材料
+          <span class="plus-icon">+</span> {{ $t('ingredient.addSingleIngredient') }}
         </button>
       </div>
     </div>
 
     <div class="search-bar">
-      <input type="text" v-model="searchQuery" placeholder="搜尋材料..." class="search-input" />
+      <input type="text" v-model="searchQuery" :placeholder="$t('ingredient.searchPlaceholder')" class="search-input" />
     </div>
 
     <div class="category-tabs">
@@ -255,7 +257,7 @@ const handleEditIngredient = (ingredient: Ingredient) => {
         :class="['tab-btn', { active: selectedCategory === '全部' }]"
         @click="selectedCategory = '全部'"
       >
-        全部
+        {{ $t('ingredient.all') }}
       </button>
       <button
         v-for="category in CATEGORIES"
@@ -290,7 +292,7 @@ const handleEditIngredient = (ingredient: Ingredient) => {
         class="page-btn nav-btn"
         :disabled="currentPage === 1"
         @click="changePage(currentPage - 1)"
-        aria-label="Previous page"
+        :aria-label="$t('ingredient.previousPage')"
       >
         ←
       </button>
@@ -313,7 +315,7 @@ const handleEditIngredient = (ingredient: Ingredient) => {
         class="page-btn nav-btn"
         :disabled="currentPage === totalPages"
         @click="changePage(currentPage + 1)"
-        aria-label="Next page"
+        :aria-label="$t('ingredient.nextPage')"
       >
         →
       </button>

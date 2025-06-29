@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useIngredientsStore } from '@/stores/ingredients'
 import { useRecipesStore } from '@/stores/recipes'
@@ -10,10 +11,24 @@ import AuthLogin from './components/AuthLogin.vue'
 import MigrationModal from './components/MigrationModal.vue'
 import ProgressToast from './components/ProgressToast.vue'
 import WorkspaceInviteDialog from './components/WorkspaceInviteDialog.vue'
+import LanguageSwitcher from './components/LanguageSwitcher.vue'
 import { useImportProgress } from '@/composables/useImportProgress'
+import {
+  PhPlus,
+  PhLink,
+  PhEnvelope,
+  PhTrash,
+  PhCaretDown,
+  PhSignOut,
+  PhWarning,
+  PhX,
+  PhWifiSlash,
+  PhGlobe,
+} from '@phosphor-icons/vue'
 
 const route = useRoute()
 const router = useRouter()
+const { t, locale } = useI18n()
 
 const authStore = useAuthStore()
 const ingredientsStore = useIngredientsStore()
@@ -23,6 +38,7 @@ const workspacesStore = useWorkspacesStore()
 // Dialog states
 const showAuthDialog = ref(false)
 const showWorkspaceDropdown = ref(false)
+const showUserDropdown = ref(false)
 const showCreateDialog = ref(false)
 const showJoinDialog = ref(false)
 const showInviteDialog = ref(false)
@@ -58,7 +74,7 @@ const {
 } = workspacesStore
 
 const currentWorkspaceName = computed(() => {
-  return currentWorkspace.value?.name || 'Personal Workspace'
+  return currentWorkspace.value?.name || t('nav.personalWorkspace')
 })
 
 // Workspace actions with router integration
@@ -164,11 +180,30 @@ const closeJoinDialog = () => {
   inviteToken.value = ''
 }
 
+// User dropdown functions
+const switchLanguage = () => {
+  locale.value = locale.value === 'zh' ? 'en' : 'zh'
+  localStorage.setItem('preferred-language', locale.value)
+  showUserDropdown.value = false
+}
+
+const handleSignOut = async () => {
+  try {
+    await authStore.signOut()
+    showUserDropdown.value = false
+  } catch (err) {
+    console.error('Failed to sign out:', err)
+  }
+}
+
 // Click outside handler for dropdown
 const handleClickOutside = (event: MouseEvent) => {
   const target = event.target as Element
   if (!target.closest('.workspace-dropdown')) {
     showWorkspaceDropdown.value = false
+  }
+  if (!target.closest('.user-dropdown')) {
+    showUserDropdown.value = false
   }
 }
 
@@ -220,97 +255,139 @@ onUnmounted(() => {
   <div class="app">
     <header>
       <div class="header-content">
-        <h1>酒譜資料庫</h1>
-        <nav>
+        <!-- Brand Section -->
+        <div class="brand-section">
+          <h1>{{ t('app.title') }}</h1>
+        </div>
+
+        <!-- Main Navigation -->
+        <nav class="main-nav">
           <div class="nav-links">
-            <RouterLink to="/" class="nav-link">酒譜一覽</RouterLink>
-            <RouterLink to="/ingredients" class="nav-link">材料一覽</RouterLink>
+            <RouterLink to="/" class="nav-link">{{ t('nav.recipes') }}</RouterLink>
+            <RouterLink to="/ingredients" class="nav-link">{{ t('nav.ingredients') }}</RouterLink>
+          </div>
+        </nav>
 
-            <!-- Workspace Dropdown - only show when authenticated -->
-            <div v-if="authStore.isAuthenticated" class="workspace-dropdown">
-              <button
-                class="workspace-trigger"
-                @click="showWorkspaceDropdown = !showWorkspaceDropdown"
-              >
-                <span class="workspace-name">
-                  {{ currentWorkspaceName }}
-                </span>
-                <span class="dropdown-arrow">▼</span>
-              </button>
+        <!-- User Section -->
+        <div class="user-section">
+          <!-- Workspace Dropdown - only show when authenticated -->
+          <div v-if="authStore.isAuthenticated" class="workspace-dropdown">
+            <button
+              class="workspace-trigger"
+              @click="showWorkspaceDropdown = !showWorkspaceDropdown"
+            >
+              <span class="workspace-name">
+                {{ currentWorkspaceName }}
+              </span>
+              <PhCaretDown :size="14" class="dropdown-arrow" />
+            </button>
 
-              <div v-if="showWorkspaceDropdown" class="workspace-menu">
-                <div class="workspace-section">
-                  <div class="workspace-section-title">Workspaces</div>
+            <div v-if="showWorkspaceDropdown" class="workspace-menu">
+              <div class="workspace-section">
+                <div class="workspace-section-title">{{ t('workspace.workspaces') }}</div>
 
-                  <div
-                    class="workspace-option"
-                    :class="{ active: !currentWorkspaceId }"
-                    @click="switchToPersonal"
-                  >
-                    <span class="workspace-option-name">Personal Workspace</span>
-                    <span class="workspace-option-role">Owner</span>
-                  </div>
-
-                  <div
-                    v-for="workspace in workspaces"
-                    :key="workspace.id"
-                    class="workspace-option"
-                    :class="{ active: currentWorkspaceId === workspace.id }"
-                    @click="switchToWorkspace(workspace.id)"
-                  >
-                    <span class="workspace-option-name">{{ workspace.name }}</span>
-                    <span class="workspace-option-role">{{
-                      getUserRole(workspace.id) || 'Member'
-                    }}</span>
-                  </div>
+                <div
+                  class="workspace-option"
+                  :class="{ active: !currentWorkspaceId }"
+                  @click="switchToPersonal"
+                >
+                  <span class="workspace-option-name">{{ t('workspace.personalWorkspace') }}</span>
+                  <span class="workspace-option-role">{{ t('workspace.owner') }}</span>
                 </div>
 
-                <div class="workspace-actions">
-                  <button class="workspace-action-btn" @click="showCreateDialog = true">
-                    ➕ Create Workspace
-                  </button>
-                  <button class="workspace-action-btn" @click="showJoinDialog = true">
-                    🔗 Join Workspace
-                  </button>
-                  <button
-                    v-if="currentWorkspaceId"
-                    class="workspace-action-btn"
-                    @click="showInviteDialog = true"
-                  >
-                    📧 Invite Members
-                  </button>
-                  <button
-                    v-if="currentWorkspaceId && getUserRole(currentWorkspaceId) === 'owner'"
-                    class="workspace-action-btn workspace-delete-btn"
-                    @click="handleDeleteWorkspace(currentWorkspaceId, currentWorkspaceName)"
-                  >
-                    🗑️ Delete Workspace
-                  </button>
+                <div
+                  v-for="workspace in workspaces"
+                  :key="workspace.id"
+                  class="workspace-option"
+                  :class="{ active: currentWorkspaceId === workspace.id }"
+                  @click="switchToWorkspace(workspace.id)"
+                >
+                  <span class="workspace-option-name">{{ workspace.name }}</span>
+                  <span class="workspace-option-role">{{
+                    getUserRole(workspace.id) || t('workspace.member')
+                  }}</span>
                 </div>
+              </div>
+
+              <div class="workspace-actions">
+                <button class="workspace-action-btn" @click="showCreateDialog = true">
+                  <PhPlus :size="16" />
+                  {{ t('workspace.createWorkspace') }}
+                </button>
+                <button class="workspace-action-btn" @click="showJoinDialog = true">
+                  <PhLink :size="16" />
+                  {{ t('workspace.joinWorkspace') }}
+                </button>
+                <button
+                  v-if="currentWorkspaceId"
+                  class="workspace-action-btn"
+                  @click="showInviteDialog = true"
+                >
+                  <PhEnvelope :size="16" />
+                  {{ t('workspace.inviteMembers') }}
+                </button>
+                <button
+                  v-if="currentWorkspaceId && getUserRole(currentWorkspaceId) === 'owner'"
+                  class="workspace-action-btn workspace-delete-btn"
+                  @click="handleDeleteWorkspace(currentWorkspaceId, currentWorkspaceName)"
+                >
+                  <PhTrash :size="16" />
+                  {{ t('workspace.deleteWorkspace') }}
+                </button>
               </div>
             </div>
           </div>
-          <div v-if="authStore.isAuthenticated" class="user-info">
-            <span class="user-email">{{ authStore.user?.email }}</span>
-            <button @click="authStore.signOut()" class="sign-out-btn">Sign Out</button>
+
+          <!-- User Account Dropdown -->
+          <div v-if="authStore.isAuthenticated" class="user-dropdown">
+            <button
+              class="user-trigger"
+              @click="showUserDropdown = !showUserDropdown"
+            >
+              <span class="user-email">{{ authStore.user?.email }}</span>
+              <PhCaretDown :size="14" class="dropdown-arrow" />
+            </button>
+
+            <div v-if="showUserDropdown" class="user-menu">
+              <div class="user-section-header">
+                <div class="user-info">
+                  <span class="user-email-display">{{ authStore.user?.email }}</span>
+                </div>
+              </div>
+
+              <div class="user-actions">
+                <button class="user-action-btn" @click="switchLanguage">
+                  <PhGlobe :size="16" />
+                  <span>{{ $i18n.locale === 'zh' ? $t('language.switchToEnglish') : $t('language.switchToChinese') }}</span>
+                </button>
+                <button class="user-action-btn sign-out-action" @click="handleSignOut">
+                  <PhSignOut :size="16" />
+                  {{ t('nav.signOut') }}
+                </button>
+              </div>
+            </div>
           </div>
-        </nav>
+
+          <!-- Language Switcher for non-authenticated users -->
+          <LanguageSwitcher v-if="!authStore.isAuthenticated" />
+        </div>
       </div>
     </header>
 
     <div class="main-container">
       <div v-if="authStore.isLoading" class="loading-state">
         <div class="loading-spinner"></div>
-        <p>Loading...</p>
+        <p>{{ t('app.loading') }}</p>
       </div>
 
       <div v-else>
         <!-- Auth banner for offline users -->
         <div v-if="!authStore.isAuthenticated" class="offline-banner">
           <div class="offline-message">
-            <span>📴 離線模式 - 資料僅儲存在本地端</span>
+            <PhWifiSlash :size="20" class="offline-icon" />
+            <span>{{ t('auth.offlineMode') }}</span>
             <button @click="showAuthDialog = true" class="auth-suggestion-btn">
-              登入以同步資料
+              {{ t('auth.loginToSync') }}
             </button>
           </div>
         </div>
@@ -322,7 +399,9 @@ onUnmounted(() => {
           @click="showAuthDialog = false"
         >
           <div class="auth-dialog" @click.stop>
-            <button class="close-auth" @click="showAuthDialog = false">×</button>
+            <button class="close-auth" @click="showAuthDialog = false">
+              <PhX :size="20" />
+            </button>
             <AuthLogin />
           </div>
         </div>
@@ -360,28 +439,30 @@ onUnmounted(() => {
     <div v-if="showCreateDialog" class="dialog-overlay" @click="closeCreateDialog">
       <div class="dialog" @click.stop>
         <div class="dialog-header">
-          <h3>Create New Workspace</h3>
-          <button class="btn-icon" @click="closeCreateDialog">×</button>
+          <h3>{{ t('workspace.createWorkspace') }}</h3>
+          <button class="btn-icon" @click="closeCreateDialog">
+            <X :size="18" />
+          </button>
         </div>
 
         <form @submit.prevent="handleCreateWorkspace" class="dialog-content">
           <div class="form-group">
-            <label for="workspace-name">Workspace Name *</label>
+            <label for="workspace-name">{{ t('workspace.workspaceName') }} *</label>
             <input
               id="workspace-name"
               v-model="newWorkspace.name"
               type="text"
               required
-              placeholder="Enter workspace name"
+              :placeholder="t('workspace.enterWorkspaceName')"
             />
           </div>
 
           <div class="form-group">
-            <label for="workspace-description">Description</label>
+            <label for="workspace-description">{{ t('workspace.description') }}</label>
             <textarea
               id="workspace-description"
               v-model="newWorkspace.description"
-              placeholder="Optional workspace description"
+              :placeholder="t('workspace.optionalDescription')"
               rows="3"
             ></textarea>
           </div>
@@ -389,17 +470,17 @@ onUnmounted(() => {
           <div class="form-group">
             <label>
               <input type="checkbox" v-model="migratePersonalData" />
-              Transfer my personal data to this workspace
+              {{ t('workspace.transferPersonalData') }}
             </label>
             <p class="form-help">
-              This will move your existing ingredients and recipes to the new workspace
+              {{ t('workspace.transferPersonalDataHelp') }}
             </p>
           </div>
 
           <div class="dialog-actions">
-            <button type="button" class="btn-secondary" @click="closeCreateDialog">Cancel</button>
+            <button type="button" class="btn-secondary" @click="closeCreateDialog">{{ t('workspace.cancel') }}</button>
             <button type="submit" class="btn-primary" :disabled="!newWorkspace.name.trim()">
-              Create Workspace
+              {{ t('workspace.create') }}
             </button>
           </div>
         </form>
@@ -410,27 +491,29 @@ onUnmounted(() => {
     <div v-if="showJoinDialog" class="dialog-overlay" @click="closeJoinDialog">
       <div class="dialog" @click.stop>
         <div class="dialog-header">
-          <h3>Join Workspace</h3>
-          <button class="btn-icon" @click="closeJoinDialog">×</button>
+          <h3>{{ t('workspace.joinWorkspace') }}</h3>
+          <button class="btn-icon" @click="closeJoinDialog">
+            <X :size="18" />
+          </button>
         </div>
 
         <form @submit.prevent="handleAcceptInvite" class="dialog-content">
           <div class="form-group">
-            <label for="invite-token">Invitation Token *</label>
+            <label for="invite-token">{{ t('workspace.invitationToken') }} *</label>
             <input
               id="invite-token"
               v-model="inviteToken"
               type="text"
               required
-              placeholder="Enter invitation token"
+              :placeholder="t('workspace.enterInvitationToken')"
             />
-            <p class="form-help">Ask a workspace member for an invitation token</p>
+            <p class="form-help">{{ t('workspace.invitationTokenHelp') }}</p>
           </div>
 
           <div class="dialog-actions">
-            <button type="button" class="btn-secondary" @click="closeJoinDialog">Cancel</button>
+            <button type="button" class="btn-secondary" @click="closeJoinDialog">{{ t('workspace.cancel') }}</button>
             <button type="submit" class="btn-primary" :disabled="!inviteToken.trim()">
-              Join Workspace
+              {{ t('workspace.join') }}
             </button>
           </div>
         </form>
@@ -448,35 +531,38 @@ onUnmounted(() => {
     <div v-if="showDeleteDialog" class="dialog-overlay" @click="cancelDeleteWorkspace">
       <div class="dialog delete-dialog" @click.stop>
         <div class="dialog-header">
-          <h3>Delete Workspace</h3>
-          <button class="btn-icon" @click="cancelDeleteWorkspace">×</button>
+          <h3>{{ t('workspace.deleteConfirmTitle') }}</h3>
+          <button class="btn-icon" @click="cancelDeleteWorkspace">
+            <X :size="18" />
+          </button>
         </div>
 
         <div class="dialog-content">
           <div class="delete-warning">
-            <div class="warning-icon">⚠️</div>
+            <div class="warning-icon">
+              <PhWarning :size="32" color="#e65100" />
+            </div>
             <div class="warning-content">
-              <p class="warning-title">This action cannot be undone</p>
+              <p class="warning-title">{{ t('workspace.actionCannotBeUndone') }}</p>
               <p class="warning-message">
-                Are you sure you want to delete <strong>"{{ workspaceToDelete?.name }}"</strong>?
+                {{ t('workspace.deleteConfirmMessage', { name: workspaceToDelete?.name }) }}
               </p>
               <p class="warning-details">
-                All workspace data including recipes, ingredients, and member access will be
-                permanently removed.
+                {{ t('workspace.deleteConfirmDetails') }}
               </p>
             </div>
           </div>
         </div>
 
         <div class="dialog-actions">
-          <button type="button" class="btn-secondary" @click="cancelDeleteWorkspace">Cancel</button>
+          <button type="button" class="btn-secondary" @click="cancelDeleteWorkspace">{{ t('workspace.cancel') }}</button>
           <button
             type="button"
             class="btn-danger"
             @click="confirmDeleteWorkspace"
             :disabled="workspacesStore.isLoading"
           >
-            {{ workspacesStore.isLoading ? 'Deleting...' : 'Delete Workspace' }}
+            {{ workspacesStore.isLoading ? t('workspace.deleting') : t('workspace.deleteWorkspace') }}
           </button>
         </div>
       </div>
@@ -510,10 +596,28 @@ header {
   max-width: 1200px;
   width: 100%;
   margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
+  gap: 2rem;
   padding: 1rem 24px;
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+}
+
+.main-nav {
+  display: flex;
+  justify-content: center;
+}
+
+.user-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  justify-self: end;
 }
 
 @media (min-width: 768px) {
@@ -532,20 +636,13 @@ header {
 
 h1 {
   color: #333;
-  font-size: 1.125rem;
-  font-weight: 600;
+  font-size: 1.25rem;
+  font-weight: 700;
   margin: 0;
+  white-space: nowrap;
 }
 
-nav {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 2rem;
-}
-
-.user-info {
+.user-account {
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -557,13 +654,17 @@ nav {
 }
 
 .sign-out-btn {
-  padding: 0.25rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
   background: #f44336;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   font-size: 0.875rem;
+  font-weight: 500;
   transition: background-color 0.2s;
 }
 
@@ -575,6 +676,19 @@ nav {
   display: flex;
   gap: 2rem;
   align-items: center;
+}
+
+.offline-message {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+.offline-icon {
+  flex-shrink: 0;
+  color: #dc3545;
 }
 
 .nav-link {
@@ -662,14 +776,6 @@ nav {
   justify-content: center;
 }
 
-.offline-message {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  font-size: 0.9rem;
-  color: #6c757d;
-}
-
 .auth-suggestion-btn {
   background: var(--primary-color);
   color: white;
@@ -691,43 +797,70 @@ nav {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .auth-dialog {
   background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  max-width: 400px;
+  border-radius: 16px;
+  padding: 2.5rem;
+  max-width: 420px;
   width: 90%;
   position: relative;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: slideUp 0.3s ease-out;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .close-auth {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: none;
+  top: 1.25rem;
+  right: 1.25rem;
+  background: rgba(0, 0, 0, 0.05);
   border: none;
-  font-size: 1.5rem;
   cursor: pointer;
-  color: #666;
-  width: 30px;
-  height: 30px;
+  color: #6c757d;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
 }
 
 .close-auth:hover {
-  background: #f5f5f5;
+  background: rgba(0, 0, 0, 0.1);
+  color: #495057;
+  transform: scale(1.05);
 }
 
 :deep(.data-import-export .button-group) {
@@ -860,7 +993,9 @@ nav {
 }
 
 .workspace-action-btn {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   width: 100%;
   background: none;
   border: none;
@@ -890,6 +1025,107 @@ nav {
 .workspace-delete-btn:hover {
   background: #f44336 !important;
   color: white !important;
+}
+
+/* User Dropdown Styles */
+.user-dropdown {
+  position: relative;
+}
+
+.user-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--text-color);
+  transition: all 0.2s;
+  max-width: 200px;
+}
+
+.user-trigger:hover {
+  background: var(--background-color);
+  border-color: var(--primary-color);
+}
+
+.user-trigger .user-email {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 200;
+  min-width: 220px;
+  margin-top: 0.25rem;
+}
+
+.user-section-header {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  background: #f8f9fa;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.user-email-display {
+  font-weight: 600;
+  color: var(--text-color);
+  font-size: 0.875rem;
+  word-break: break-all;
+}
+
+.user-actions {
+  padding: 0.75rem;
+}
+
+.user-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0.75rem;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: var(--text-color);
+  transition: background-color 0.2s;
+  margin-bottom: 0.25rem;
+}
+
+.user-action-btn:hover {
+  background: #f8f9fa;
+}
+
+.user-action-btn:last-child {
+  margin-bottom: 0;
+}
+
+.sign-out-action {
+  color: #f44336 !important;
+}
+
+.sign-out-action:hover {
+  background: #ffebee !important;
 }
 
 /* Dialog Styles */

@@ -4,7 +4,9 @@ import { useIngredientsStore } from '@/stores/ingredients'
 import { useRecipesStore } from '@/stores/recipes'
 import type { Ingredient } from '@/stores/ingredients'
 import type { Recipe } from '@/stores/recipes'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const ingredientsStore = useIngredientsStore()
 const recipesStore = useRecipesStore()
 
@@ -36,7 +38,7 @@ const exportData = () => {
   document.body.removeChild(a)
   URL.revokeObjectURL(url)
 
-  notificationMessage.value = '資料已成功匯出'
+  notificationMessage.value = t('import.dataExported')
   showNotification.value = true
   setTimeout(() => {
     showNotification.value = false
@@ -61,14 +63,14 @@ const importData = async (event: Event) => {
         !Array.isArray(data.ingredients) ||
         !Array.isArray(data.recipes)
       ) {
-        throw new Error('無效的資料格式')
+        throw new Error(t('import.invalidFormat'))
       }
 
       // Import data through store methods to handle both storage backends
       await ingredientsStore.importData(data.ingredients)
       await recipesStore.importData(data.recipes)
 
-      notificationMessage.value = '資料已成功匯入'
+      notificationMessage.value = t('import.dataImported')
       showNotification.value = true
       setTimeout(() => {
         showNotification.value = false
@@ -79,7 +81,7 @@ const importData = async (event: Event) => {
     } catch (error) {
       console.error('Import error:', error)
       notificationMessage.value =
-        error instanceof Error ? `匯入失敗：${error.message}` : '匯入失敗：無效的資料格式'
+        error instanceof Error ? t('import.importFailed', { message: error.message }) : t('import.invalidFormat')
       showNotification.value = true
       setTimeout(() => {
         showNotification.value = false
@@ -94,9 +96,9 @@ const importData = async (event: Event) => {
 <template>
   <div class="data-import-export">
     <div class="link-group">
-      <a href="#" class="export-link" @click.prevent="exportData"> 匯出資料 </a>
+      <a href="#" class="export-link" @click.prevent="exportData"> {{ $t('import.exportData') }} </a>
       <label class="import-link">
-        匯入資料
+        {{ $t('import.importData') }}
         <input type="file" accept=".json" @change="importData" class="file-input" />
       </label>
     </div>

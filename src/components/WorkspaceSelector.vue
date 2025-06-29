@@ -1,13 +1,13 @@
 <template>
   <div class="workspace-selector">
     <div class="workspace-header">
-      <h3>{{ currentWorkspace ? currentWorkspace.name : 'Personal Workspace' }}</h3>
+      <h3>{{ currentWorkspace ? currentWorkspace.name : $t('nav.personalWorkspace') }}</h3>
       <div class="workspace-actions">
         <button class="btn-secondary" @click="showWorkspaceDialog = true" :disabled="isLoading">
-          Switch Workspace
+          {{ $t('workspace.switchWorkspace') }}
         </button>
         <button class="btn-primary" @click="showCreateDialog = true" :disabled="isLoading">
-          Create Workspace
+          {{ $t('workspace.createWorkspace') }}
         </button>
       </div>
     </div>
@@ -16,7 +16,7 @@
     <div v-if="showWorkspaceDialog" class="dialog-overlay" @click="closeWorkspaceDialog">
       <div class="dialog" @click.stop>
         <div class="dialog-header">
-          <h3>Select Workspace</h3>
+          <h3>{{ $t('workspace.selectWorkspace') }}</h3>
           <button class="btn-icon" @click="closeWorkspaceDialog">×</button>
         </div>
 
@@ -28,10 +28,10 @@
               @click="switchToPersonal"
             >
               <div class="workspace-info">
-                <h4>Personal Workspace</h4>
-                <p>Your private ingredients and recipes</p>
+                <h4>{{ $t('nav.personalWorkspace') }}</h4>
+                <p>{{ $t('workspace.yourPrivate') }}</p>
               </div>
-              <div class="workspace-role">Owner</div>
+              <div class="workspace-role">{{ $t('workspace.owner') }}</div>
             </div>
 
             <div
@@ -43,45 +43,45 @@
             >
               <div class="workspace-info">
                 <h4>{{ workspace.name }}</h4>
-                <p>{{ workspace.description || 'Collaborative workspace' }}</p>
+                <p>{{ workspace.description || $t('workspace.collaborative') }}</p>
               </div>
-              <div class="workspace-role">Member</div>
+              <div class="workspace-role">{{ $t('workspace.member') }}</div>
             </div>
           </div>
 
           <div class="dialog-actions">
-            <button class="btn-secondary" @click="showJoinDialog = true">Join Workspace</button>
+            <button class="btn-secondary" @click="showJoinDialog = true">{{ $t('workspace.joinWorkspace') }}</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Create Workspace Dialog -->
+    <!-- {{ $t('workspace.createWorkspace') }} Dialog -->
     <div v-if="showCreateDialog" class="dialog-overlay" @click="closeCreateDialog">
       <div class="dialog" @click.stop>
         <div class="dialog-header">
-          <h3>Create New Workspace</h3>
+          <h3>{{ $t('workspace.createNew') }}</h3>
           <button class="btn-icon" @click="closeCreateDialog">×</button>
         </div>
 
         <form @submit.prevent="handleCreateWorkspace" class="dialog-content">
           <div class="form-group">
-            <label for="workspace-name">Workspace Name *</label>
+            <label for="workspace-name">{{ $t('workspace.workspaceName') }} *</label>
             <input
               id="workspace-name"
               v-model="newWorkspace.name"
               type="text"
               required
-              placeholder="Enter workspace name"
+              :placeholder="$t('workspace.enterWorkspaceName')"
             />
           </div>
 
           <div class="form-group">
-            <label for="workspace-description">Description</label>
+            <label for="workspace-description">{{ $t('workspace.description') }}</label>
             <textarea
               id="workspace-description"
               v-model="newWorkspace.description"
-              placeholder="Optional workspace description"
+              :placeholder="$t('workspace.optionalDescription')"
               rows="3"
             ></textarea>
           </div>
@@ -89,10 +89,10 @@
           <div class="form-group">
             <label>
               <input type="checkbox" v-model="migratePersonalData" />
-              Transfer my personal data to this workspace
+              {{ $t('workspace.transferPersonalData') }}
             </label>
             <p class="form-help">
-              This will move your existing ingredients and recipes to the new workspace
+              {{ $t('workspace.transferPersonalDataHelp') }}
             </p>
           </div>
 
@@ -103,39 +103,39 @@
               @click="closeCreateDialog"
               :disabled="isLoading"
             >
-              Cancel
+              {{ $t('workspace.cancel') }}
             </button>
             <button
               type="submit"
               class="btn-primary"
               :disabled="isLoading || !newWorkspace.name.trim()"
             >
-              {{ isLoading ? 'Creating...' : 'Create Workspace' }}
+              {{ isLoading ? 'Creating...' : '{{ $t('workspace.createWorkspace') }}' }}
             </button>
           </div>
         </form>
       </div>
     </div>
 
-    <!-- Join Workspace Dialog -->
+    <!-- {{ $t('workspace.joinWorkspace') }} Dialog -->
     <div v-if="showJoinDialog" class="dialog-overlay" @click="closeJoinDialog">
       <div class="dialog" @click.stop>
         <div class="dialog-header">
-          <h3>Join Workspace</h3>
+          <h3>{{ $t('workspace.joinWorkspace') }}</h3>
           <button class="btn-icon" @click="closeJoinDialog">×</button>
         </div>
 
         <form @submit.prevent="handleAcceptInvite" class="dialog-content">
           <div class="form-group">
-            <label for="invite-token">Invitation Token *</label>
+            <label for="invite-token">{{ $t('workspace.invitationToken') }} *</label>
             <input
               id="invite-token"
               v-model="inviteToken"
               type="text"
               required
-              placeholder="Enter invitation token"
+              :placeholder="$t('workspace.enterInvitationToken')"
             />
-            <p class="form-help">Ask a workspace member for an invitation token</p>
+            <p class="form-help">{{ $t('workspace.invitationTokenHelp') }}</p>
           </div>
 
           <div class="dialog-actions">
@@ -145,10 +145,10 @@
               @click="closeJoinDialog"
               :disabled="isLoading"
             >
-              Cancel
+              {{ $t('workspace.cancel') }}
             </button>
             <button type="submit" class="btn-primary" :disabled="isLoading || !inviteToken.trim()">
-              {{ isLoading ? 'Joining...' : 'Join Workspace' }}
+              {{ isLoading ? 'Joining...' : '{{ $t('workspace.joinWorkspace') }}' }}
             </button>
           </div>
         </form>

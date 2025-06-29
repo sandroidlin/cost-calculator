@@ -2,36 +2,38 @@
   <div v-if="show" class="modal-overlay" @click="handleCancel">
     <div class="modal" @click.stop>
       <div class="modal-header">
-        <h3>Local Data Found</h3>
+        <h3>{{ $t('migration.localDataFound') }}</h3>
       </div>
 
       <div class="modal-content">
-        <p>
-          You have <strong>{{ itemCount }}</strong> {{ itemType }} stored locally.
-        </p>
-        <p>What would you like to do with this data?</p>
+        <p v-html="$t('migration.youHaveData', { itemCount: itemCount, itemType: itemType })"></p>
+        <p>{{ $t('migration.whatToDo') }}</p>
 
         <div class="options">
           <div class="option">
-            <strong>Merge with online data</strong>
-            <p class="option-description">Add your local {{ itemType }} to your cloud storage</p>
+            <strong>{{ $t('migration.mergeData') }}</strong>
+            <p class="option-description">{{ $t('migration.mergeDescription', { itemType: itemType }) }}</p>
           </div>
           <div class="option">
-            <strong>Use only online data</strong>
-            <p class="option-description">Discard local {{ itemType }} and use only cloud data</p>
+            <strong>{{ $t('migration.useOnlineData') }}</strong>
+            <p class="option-description">{{ $t('migration.useOnlineDescription', { itemType: itemType }) }}</p>
           </div>
         </div>
       </div>
 
       <div class="modal-footer">
-        <button class="btn btn-secondary" @click="handleCancel">Use Online Only</button>
-        <button class="btn btn-primary" @click="handleMerge">Merge Data</button>
+        <button class="btn btn-secondary" @click="handleCancel">{{ $t('migration.useOnlineOnly') }}</button>
+        <button class="btn btn-primary" @click="handleMerge">{{ $t('migration.merge') }}</button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+
 interface Props {
   show: boolean
   itemCount: number

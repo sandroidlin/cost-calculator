@@ -93,9 +93,9 @@ const closeEditDialog = () => {
 <template>
   <div class="recipe-list">
     <div class="header">
-      <h2>酒譜一覽</h2>
+      <h2>{{ $t('nav.recipesList') }}</h2>
       <button class="add-btn" @click="showCreateDialog = true">
-        <span class="plus-icon">+</span> 新增酒譜
+        <span class="plus-icon">+</span> {{ $t('recipe.newRecipe') }}
       </button>
     </div>
 
@@ -106,7 +106,7 @@ const closeEditDialog = () => {
           :class="{ active: selectedStatus === 'complete' }"
           @click="selectedStatus = 'complete'"
         >
-          完成區
+          {{ $t('recipe.completeZone') }}
           <span class="badge">{{ recipeCounts.complete }}</span>
         </button>
         <button
@@ -114,7 +114,7 @@ const closeEditDialog = () => {
           :class="{ active: selectedStatus === 'draft' }"
           @click="selectedStatus = 'draft'"
         >
-          暫存區
+          {{ $t('recipe.draftZone') }}
           <span class="badge">{{ recipeCounts.draft }}</span>
         </button>
       </div>
