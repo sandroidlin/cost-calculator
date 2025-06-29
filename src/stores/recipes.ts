@@ -38,11 +38,13 @@ export interface Recipe {
 
 // InstantDB data types
 interface InstantDBRecipeIngredient {
+  id: string | number
   ingredientId: number
   amount: number
   name: string
   unit: string
   unitPrice: number
+  type: string
 }
 
 interface InstantDBRecipe {
@@ -51,6 +53,7 @@ interface InstantDBRecipe {
   bartenderName: string
   glass: string
   ice: string
+  method: string
   totalCost: number
   status: string
   recipeIngredients: InstantDBRecipeIngredient[]
@@ -69,7 +72,7 @@ export const useRecipesStore = defineStore('recipes', () => {
   // Query recipes from InstantDB - direct reactive approach
   const { isLoading: queryLoading, error: queryError, data: instantData } = db.useQuery({
     recipes: {
-      $: { where: { $user: authStore.user?.id } },
+      $: authStore.user?.id ? { where: { $user: authStore.user.id } } : {},
       recipeIngredients: {}
     }
   })

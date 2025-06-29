@@ -75,7 +75,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
   const ingredients = ref<Ingredient[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
-  
+
   // Migration modal state
   const showMigrationModal = ref(false)
   const migrationData = ref<Ingredient[]>([])
@@ -83,7 +83,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
   // Query ingredients from InstantDB - direct reactive approach
   const { isLoading: queryLoading, error: queryError, data: instantData } = db.useQuery({
     ingredients: {
-      $: { where: { $user: authStore.user?.id } },
+      $: authStore.user?.id ? { where: { $user: authStore.user.id } } : {},
       compoundIngredients: {}
     }
   })
@@ -119,14 +119,14 @@ export const useIngredientsStore = defineStore('ingredients', () => {
               ingredientId: ci.ingredientId,
               amount: ci.amount
             })) || [],
-            totalAmount: item.totalAmount,
+            totalAmount: item.totalAmount ?? 0,
             instructions: item.instructions || ''
           }
         } else {
           return {
             ...baseIngredient,
             type: '單一材料' as const,
-            amount: item.amount,
+            amount: item.amount ?? 0,
             unit: item.unit as UnitType
           }
         }
@@ -259,14 +259,14 @@ export const useIngredientsStore = defineStore('ingredients', () => {
       }
     }
   }
-  
+
   // Handle migration modal actions
   const handleMigrationMerge = async () => {
     const { startImport, updateProgress, completeImport } = useImportProgress()
-    
+
     if (migrationData.value.length > 0) {
       startImport('Migrating ingredients to InstantDB', migrationData.value.length)
-      
+
       try {
         for (let i = 0; i < migrationData.value.length; i++) {
           const ingredient = migrationData.value[i]
@@ -279,12 +279,12 @@ export const useIngredientsStore = defineStore('ingredients', () => {
         completeImport('Migration completed with some errors')
       }
     }
-    
+
     localStorage.removeItem('ingredients')
     migrationData.value = []
     showMigrationModal.value = false
   }
-  
+
   const handleMigrationDiscard = () => {
     localStorage.removeItem('ingredients')
     migrationData.value = []
@@ -462,13 +462,13 @@ export const useIngredientsStore = defineStore('ingredients', () => {
   // Import data method that handles both storage backends
   const importData = async (newIngredients: Ingredient[]) => {
     const { startImport, updateProgress, completeImport } = useImportProgress()
-    
+
     ingredients.value = newIngredients
 
     if (authStore.isAuthenticated && newIngredients.length > 0) {
       // Show progress for InstantDB import
       startImport('Importing ingredients to InstantDB', newIngredients.length)
-      
+
       try {
         // Save to InstantDB when authenticated
         for (let i = 0; i < newIngredients.length; i++) {
@@ -476,7 +476,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
           await saveToInstant(ingredient)
           updateProgress(i + 1, ingredient.name)
         }
-        
+
         completeImport('All ingredients imported successfully!')
       } catch (error) {
         console.error('Error importing ingredients:', error)

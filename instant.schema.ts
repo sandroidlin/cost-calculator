@@ -1,7 +1,8 @@
 import { i } from '@dorilama/instantdb-vue'
 
 // Define the schema for our cost calculator data model
-const schema = i.schema({
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const schema: any = i.schema({
   entities: {
     $users: i.entity({
       email: i.string().unique().indexed(),

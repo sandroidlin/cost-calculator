@@ -10,9 +10,10 @@ if (!APP_ID) {
   throw new Error('VITE_INSTANT_APP_ID environment variable is required')
 }
 
-export const db = init({ 
-  appId: APP_ID, 
-  schema 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const db: any = init({
+  appId: APP_ID,
+  schema
 })
 
 export type { AppSchema }
