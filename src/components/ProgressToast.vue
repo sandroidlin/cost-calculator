@@ -6,10 +6,7 @@
         <span class="progress-percentage">{{ Math.round(percentage) }}%</span>
       </div>
       <div class="progress-bar-container">
-        <div 
-          class="progress-bar" 
-          :style="{ width: `${percentage}%` }"
-        ></div>
+        <div class="progress-bar" :style="{ width: `${percentage}%` }"></div>
       </div>
       <div v-if="subtitle" class="progress-subtitle">{{ subtitle }}</div>
     </div>

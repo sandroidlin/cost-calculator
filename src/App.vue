@@ -26,14 +26,18 @@ const showWorkspaceDropdown = ref(false)
 const showCreateDialog = ref(false)
 const showJoinDialog = ref(false)
 const showInviteDialog = ref(false)
+const showDeleteDialog = ref(false)
 
 // Form data
 const newWorkspace = ref({
   name: '',
-  description: ''
+  description: '',
 })
 const migratePersonalData = ref(false)
 const inviteToken = ref('')
+
+// Delete workspace state
+const workspaceToDelete = ref<{ id: string; name: string } | null>(null)
 
 const { progressState } = useImportProgress()
 
@@ -43,12 +47,14 @@ const currentWorkspace = computed(() => workspacesStore.currentWorkspace)
 const currentWorkspaceId = computed(() => workspacesStore.currentWorkspaceId)
 
 // Actions can be destructured safely
-const { 
-  switchToWorkspace: switchWorkspace, 
-  createWorkspace, 
-  acceptInvite, 
+const {
+  switchToWorkspace: switchWorkspace,
+  createWorkspace,
+  deleteWorkspace,
+  acceptInvite,
   migrateDataToWorkspace,
-  initializeFromUrl
+  initializeFromUrl,
+  getUserRole,
 } = workspacesStore
 
 const currentWorkspaceName = computed(() => {
@@ -59,7 +65,7 @@ const currentWorkspaceName = computed(() => {
 const switchToPersonal = () => {
   switchWorkspace(null)
   showWorkspaceDropdown.value = false
-  
+
   // Update URL to remove workspace parameter
   const currentQuery = { ...route.query }
   delete currentQuery.workspace
@@ -69,7 +75,7 @@ const switchToPersonal = () => {
 const switchToWorkspace = (workspaceId: string) => {
   switchWorkspace(workspaceId)
   showWorkspaceDropdown.value = false
-  
+
   // Update URL to include workspace parameter
   const currentQuery = { ...route.query, workspace: workspaceId }
   router.push({ path: route.path, query: currentQuery }).catch(() => {})
@@ -79,7 +85,7 @@ const handleCreateWorkspace = async () => {
   try {
     const workspace = await createWorkspace(
       newWorkspace.value.name.trim(),
-      newWorkspace.value.description.trim()
+      newWorkspace.value.description.trim(),
     )
 
     if (migratePersonalData.value && workspace?.id) {
@@ -87,7 +93,7 @@ const handleCreateWorkspace = async () => {
     }
 
     closeCreateDialog()
-    
+
     if (workspace?.id) {
       switchWorkspace(workspace.id)
       // Update URL to include new workspace
@@ -103,7 +109,7 @@ const handleAcceptInvite = async () => {
   try {
     const workspace = await acceptInvite(inviteToken.value.trim())
     closeJoinDialog()
-    
+
     if (workspace?.id) {
       switchWorkspace(workspace.id)
       // Update URL to include joined workspace
@@ -113,6 +119,37 @@ const handleAcceptInvite = async () => {
   } catch (err) {
     console.error('Failed to accept invitation:', err)
   }
+}
+
+const handleDeleteWorkspace = (workspaceId: string, workspaceName: string) => {
+  workspaceToDelete.value = { id: workspaceId, name: workspaceName }
+  showDeleteDialog.value = true
+  showWorkspaceDropdown.value = false
+}
+
+const confirmDeleteWorkspace = async () => {
+  if (!workspaceToDelete.value) return
+
+  try {
+    await deleteWorkspace(workspaceToDelete.value.id)
+    showDeleteDialog.value = false
+    workspaceToDelete.value = null
+
+    // Update URL to remove workspace parameter if deleted workspace was active
+    if (currentWorkspaceId.value === null) {
+      const currentQuery = { ...route.query }
+      delete currentQuery.workspace
+      router.push({ path: route.path, query: currentQuery }).catch(() => {})
+    }
+  } catch (err) {
+    console.error('Failed to delete workspace:', err)
+    // Keep modal open and show error (we could add error state to modal)
+  }
+}
+
+const cancelDeleteWorkspace = () => {
+  showDeleteDialog.value = false
+  workspaceToDelete.value = null
 }
 
 // Dialog close handlers
@@ -135,30 +172,36 @@ const handleClickOutside = (event: MouseEvent) => {
   }
 }
 
-
 // Watch for URL workspace changes and sync with store
-watch(() => route.query.workspace, async (workspaceId) => {
-  const urlWorkspaceId = workspaceId as string | undefined
-  if (urlWorkspaceId !== currentWorkspaceId.value) {
-    if (authStore.isAuthenticated) {
-      await initializeFromUrl(urlWorkspaceId)
+watch(
+  () => route.query.workspace,
+  async (workspaceId) => {
+    const urlWorkspaceId = workspaceId as string | undefined
+    if (urlWorkspaceId !== currentWorkspaceId.value) {
+      if (authStore.isAuthenticated) {
+        await initializeFromUrl(urlWorkspaceId)
+      }
     }
-  }
-}, { immediate: false })
+  },
+  { immediate: false },
+)
 
 // Watch for authentication changes and clean up URL
-watch(() => authStore.isAuthenticated, async (isAuth) => {
-  if (!isAuth && route.query.workspace) {
-    // Clean up URL workspace parameter when not authenticated
-    const currentQuery = { ...route.query }
-    delete currentQuery.workspace
-    router.replace({ path: route.path, query: currentQuery }).catch(() => {})
-  }
-})
+watch(
+  () => authStore.isAuthenticated,
+  async (isAuth) => {
+    if (!isAuth && route.query.workspace) {
+      // Clean up URL workspace parameter when not authenticated
+      const currentQuery = { ...route.query }
+      delete currentQuery.workspace
+      router.replace({ path: route.path, query: currentQuery }).catch(() => {})
+    }
+  },
+)
 
 onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
-  
+
   // Initialize workspace from URL first, then fallback to stored
   const urlWorkspaceId = route.query.workspace as string | undefined
   if (authStore.isAuthenticated) {
@@ -182,21 +225,24 @@ onUnmounted(() => {
           <div class="nav-links">
             <RouterLink to="/" class="nav-link">酒譜一覽</RouterLink>
             <RouterLink to="/ingredients" class="nav-link">材料一覽</RouterLink>
-            
+
             <!-- Workspace Dropdown - only show when authenticated -->
             <div v-if="authStore.isAuthenticated" class="workspace-dropdown">
-              <button class="workspace-trigger" @click="showWorkspaceDropdown = !showWorkspaceDropdown">
+              <button
+                class="workspace-trigger"
+                @click="showWorkspaceDropdown = !showWorkspaceDropdown"
+              >
                 <span class="workspace-name">
                   {{ currentWorkspaceName }}
                 </span>
                 <span class="dropdown-arrow">▼</span>
               </button>
-              
+
               <div v-if="showWorkspaceDropdown" class="workspace-menu">
                 <div class="workspace-section">
                   <div class="workspace-section-title">Workspaces</div>
-                  
-                  <div 
+
+                  <div
                     class="workspace-option"
                     :class="{ active: !currentWorkspaceId }"
                     @click="switchToPersonal"
@@ -205,15 +251,17 @@ onUnmounted(() => {
                     <span class="workspace-option-role">Owner</span>
                   </div>
 
-                  <div 
-                    v-for="workspace in workspaces" 
+                  <div
+                    v-for="workspace in workspaces"
                     :key="workspace.id"
                     class="workspace-option"
                     :class="{ active: currentWorkspaceId === workspace.id }"
                     @click="switchToWorkspace(workspace.id)"
                   >
                     <span class="workspace-option-name">{{ workspace.name }}</span>
-                    <span class="workspace-option-role">Member</span>
+                    <span class="workspace-option-role">{{
+                      getUserRole(workspace.id) || 'Member'
+                    }}</span>
                   </div>
                 </div>
 
@@ -224,12 +272,19 @@ onUnmounted(() => {
                   <button class="workspace-action-btn" @click="showJoinDialog = true">
                     🔗 Join Workspace
                   </button>
-                  <button 
-                    v-if="currentWorkspaceId" 
-                    class="workspace-action-btn" 
+                  <button
+                    v-if="currentWorkspaceId"
+                    class="workspace-action-btn"
                     @click="showInviteDialog = true"
                   >
                     📧 Invite Members
+                  </button>
+                  <button
+                    v-if="currentWorkspaceId && getUserRole(currentWorkspaceId) === 'owner'"
+                    class="workspace-action-btn workspace-delete-btn"
+                    @click="handleDeleteWorkspace(currentWorkspaceId, currentWorkspaceName)"
+                  >
+                    🗑️ Delete Workspace
                   </button>
                 </div>
               </div>
@@ -248,25 +303,30 @@ onUnmounted(() => {
         <div class="loading-spinner"></div>
         <p>Loading...</p>
       </div>
-      
+
       <div v-else>
         <!-- Auth banner for offline users -->
         <div v-if="!authStore.isAuthenticated" class="offline-banner">
           <div class="offline-message">
             <span>📴 離線模式 - 資料僅儲存在本地端</span>
-            <button @click="showAuthDialog = true" class="auth-suggestion-btn">登入以同步資料</button>
+            <button @click="showAuthDialog = true" class="auth-suggestion-btn">
+              登入以同步資料
+            </button>
           </div>
         </div>
-        
+
         <!-- Auth dialog overlay -->
-        <div v-if="showAuthDialog && !authStore.isAuthenticated" class="auth-overlay" @click="showAuthDialog = false">
+        <div
+          v-if="showAuthDialog && !authStore.isAuthenticated"
+          class="auth-overlay"
+          @click="showAuthDialog = false"
+        >
           <div class="auth-dialog" @click.stop>
             <button class="close-auth" @click="showAuthDialog = false">×</button>
             <AuthLogin />
           </div>
         </div>
 
-        
         <RouterView />
       </div>
     </div>
@@ -279,7 +339,7 @@ onUnmounted(() => {
       @merge="ingredientsStore.handleMigrationMerge"
       @discard="ingredientsStore.handleMigrationDiscard"
     />
-    
+
     <MigrationModal
       :show="recipesStore.showMigrationModal"
       :item-count="recipesStore.migrationData.length"
@@ -303,7 +363,7 @@ onUnmounted(() => {
           <h3>Create New Workspace</h3>
           <button class="btn-icon" @click="closeCreateDialog">×</button>
         </div>
-        
+
         <form @submit.prevent="handleCreateWorkspace" class="dialog-content">
           <div class="form-group">
             <label for="workspace-name">Workspace Name *</label>
@@ -328,10 +388,7 @@ onUnmounted(() => {
 
           <div class="form-group">
             <label>
-              <input 
-                type="checkbox" 
-                v-model="migratePersonalData"
-              />
+              <input type="checkbox" v-model="migratePersonalData" />
               Transfer my personal data to this workspace
             </label>
             <p class="form-help">
@@ -340,18 +397,8 @@ onUnmounted(() => {
           </div>
 
           <div class="dialog-actions">
-            <button 
-              type="button" 
-              class="btn-secondary" 
-              @click="closeCreateDialog"
-            >
-              Cancel
-            </button>
-            <button 
-              type="submit" 
-              class="btn-primary"
-              :disabled="!newWorkspace.name.trim()"
-            >
+            <button type="button" class="btn-secondary" @click="closeCreateDialog">Cancel</button>
+            <button type="submit" class="btn-primary" :disabled="!newWorkspace.name.trim()">
               Create Workspace
             </button>
           </div>
@@ -366,7 +413,7 @@ onUnmounted(() => {
           <h3>Join Workspace</h3>
           <button class="btn-icon" @click="closeJoinDialog">×</button>
         </div>
-        
+
         <form @submit.prevent="handleAcceptInvite" class="dialog-content">
           <div class="form-group">
             <label for="invite-token">Invitation Token *</label>
@@ -377,24 +424,12 @@ onUnmounted(() => {
               required
               placeholder="Enter invitation token"
             />
-            <p class="form-help">
-              Ask a workspace member for an invitation token
-            </p>
+            <p class="form-help">Ask a workspace member for an invitation token</p>
           </div>
 
           <div class="dialog-actions">
-            <button 
-              type="button" 
-              class="btn-secondary" 
-              @click="closeJoinDialog"
-            >
-              Cancel
-            </button>
-            <button 
-              type="submit" 
-              class="btn-primary"
-              :disabled="!inviteToken.trim()"
-            >
+            <button type="button" class="btn-secondary" @click="closeJoinDialog">Cancel</button>
+            <button type="submit" class="btn-primary" :disabled="!inviteToken.trim()">
               Join Workspace
             </button>
           </div>
@@ -408,6 +443,44 @@ onUnmounted(() => {
       :workspace-id="currentWorkspaceId"
       @close="showInviteDialog = false"
     />
+
+    <!-- Workspace Delete Confirmation Dialog -->
+    <div v-if="showDeleteDialog" class="dialog-overlay" @click="cancelDeleteWorkspace">
+      <div class="dialog delete-dialog" @click.stop>
+        <div class="dialog-header">
+          <h3>Delete Workspace</h3>
+          <button class="btn-icon" @click="cancelDeleteWorkspace">×</button>
+        </div>
+
+        <div class="dialog-content">
+          <div class="delete-warning">
+            <div class="warning-icon">⚠️</div>
+            <div class="warning-content">
+              <p class="warning-title">This action cannot be undone</p>
+              <p class="warning-message">
+                Are you sure you want to delete <strong>"{{ workspaceToDelete?.name }}"</strong>?
+              </p>
+              <p class="warning-details">
+                All workspace data including recipes, ingredients, and member access will be
+                permanently removed.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="dialog-actions">
+          <button type="button" class="btn-secondary" @click="cancelDeleteWorkspace">Cancel</button>
+          <button
+            type="button"
+            class="btn-danger"
+            @click="confirmDeleteWorkspace"
+            :disabled="workspacesStore.isLoading"
+          >
+            {{ workspacesStore.isLoading ? 'Deleting...' : 'Delete Workspace' }}
+          </button>
+        </div>
+      </div>
+    </div>
 
     <Footer />
   </div>
@@ -566,8 +639,12 @@ nav {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .auth-required {
@@ -805,6 +882,16 @@ nav {
   margin-bottom: 0;
 }
 
+.workspace-delete-btn {
+  background: #ffebee !important;
+  color: #d32f2f !important;
+}
+
+.workspace-delete-btn:hover {
+  background: #f44336 !important;
+  color: white !important;
+}
+
 /* Dialog Styles */
 .dialog-overlay {
   position: fixed;
@@ -887,7 +974,7 @@ nav {
   border-color: var(--primary-color);
 }
 
-.form-group input[type="checkbox"] {
+.form-group input[type='checkbox'] {
   width: auto;
   margin-right: 0.5rem;
 }
@@ -943,6 +1030,76 @@ nav {
   cursor: not-allowed;
 }
 
+.btn-danger {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  font-weight: 500;
+  background: #f44336;
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #d32f2f;
+}
+
+.btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Delete Dialog Styles */
+.delete-dialog {
+  max-width: 480px;
+}
+
+.delete-dialog .dialog-actions {
+  padding: 1rem;
+}
+
+.delete-warning {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1rem;
+  background: #fff8e1;
+  border: 1px solid #ffb74d;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.warning-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.warning-content {
+  flex: 1;
+}
+
+.warning-title {
+  font-weight: 600;
+  color: #e65100;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.warning-message {
+  color: #333;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+}
+
+.warning-details {
+  color: #666;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
 /* Reset styles */
 * {
   margin: 0;
@@ -951,14 +1108,19 @@ nav {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   line-height: 1.6;
   color: #333;
   background: white;
 }
 
 /* Global styles */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   color: #333;
   line-height: 1.2;
 }
@@ -980,7 +1142,7 @@ button {
 /* Global styles */
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background: white;
   color: #333;
 }
@@ -990,7 +1152,7 @@ body {
 }
 
 :root {
-  --primary-color: #FF6B35;
+  --primary-color: #ff6b35;
   --text-color: #333;
   --text-secondary: #666;
   --border-color: #eee;

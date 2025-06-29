@@ -3,7 +3,16 @@ import { ref, computed } from 'vue'
 import { useRecipesStore } from './recipes'
 
 export type UnitType = 'ml' | 'g' | 'dash' | '份'
-export type CategoryType = '基酒' | '利口酒' | '裝飾' | '果汁果泥' | '苦精' | '酸' | '甜' | '調味料' | '其他'
+export type CategoryType =
+  | '基酒'
+  | '利口酒'
+  | '裝飾'
+  | '果汁果泥'
+  | '苦精'
+  | '酸'
+  | '甜'
+  | '調味料'
+  | '其他'
 export type IngredientType = '單一材料' | '複合材料'
 
 // Base interface for common properties
@@ -38,13 +47,23 @@ export interface CompoundIngredient extends BaseIngredient {
 export type Ingredient = SingleIngredient | CompoundIngredient
 
 export const UNIT_STEPS = {
-  'ml': 50,
-  'g': 10,
-  'dash': 1,
-  '份': 1
+  ml: 50,
+  g: 10,
+  dash: 1,
+  份: 1,
 } as const
 
-export const CATEGORIES: CategoryType[] = ['基酒', '利口酒', '裝飾', '果汁果泥', '苦精', '酸', '甜', '調味料', '其他']
+export const CATEGORIES: CategoryType[] = [
+  '基酒',
+  '利口酒',
+  '裝飾',
+  '果汁果泥',
+  '苦精',
+  '酸',
+  '甜',
+  '調味料',
+  '其他',
+]
 
 export const useIngredientsStore = defineStore('ingredients', () => {
   const ingredients = ref<Ingredient[]>([])
@@ -60,7 +79,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
         let category = item.category
         if (category === '糖') category = '甜'
         if (category === '香料') category = '調味料'
-        
+
         if (item.type === '複合材料') {
           return {
             id: item.id,
@@ -72,7 +91,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
             totalAmount: item.totalAmount,
             totalPrice: item.totalPrice,
             unitPrice: item.unitPrice,
-            instructions: item.instructions
+            instructions: item.instructions,
           }
         } else {
           return {
@@ -83,7 +102,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
             amount: item.amount,
             unit: item.unit as UnitType,
             totalPrice: item.totalPrice,
-            unitPrice: item.unitPrice
+            unitPrice: item.unitPrice,
           }
         }
       })
@@ -101,20 +120,23 @@ export const useIngredientsStore = defineStore('ingredients', () => {
 
   // Helper function to calculate compound ingredient details
   const calculateCompoundDetails = (
-    compoundIngredient: Omit<CompoundIngredient, 'totalAmount' | 'totalPrice' | 'unitPrice' | 'id' | 'type'> & { type: '複合材料', totalAmount?: number }
+    compoundIngredient: Omit<
+      CompoundIngredient,
+      'totalAmount' | 'totalPrice' | 'unitPrice' | 'id' | 'type'
+    > & { type: '複合材料'; totalAmount?: number },
   ) => {
     let calculatedTotalAmount = 0
     let totalPrice = 0
 
     compoundIngredient.ingredients.forEach(({ ingredientId, amount }) => {
-      const ingredient = ingredients.value.find(ing => ing.id === ingredientId)
+      const ingredient = ingredients.value.find((ing) => ing.id === ingredientId)
       if (!ingredient || ingredient.type !== '單一材料') return
 
       // Only add to totalAmount if the unit matches mainUnit
       if (ingredient.unit === compoundIngredient.mainUnit) {
         calculatedTotalAmount += amount
       }
-      
+
       // Always add to total price
       totalPrice += ingredient.unitPrice * amount
     })
@@ -127,7 +149,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
     return {
       totalAmount,
       totalPrice,
-      unitPrice
+      unitPrice,
     }
   }
 
@@ -137,17 +159,22 @@ export const useIngredientsStore = defineStore('ingredients', () => {
       id: Date.now(),
       type: '單一材料',
       ...ingredient,
-      unitPrice
+      unitPrice,
     })
     saveIngredients()
   }
 
-  function addCompoundIngredient(ingredient: Omit<CompoundIngredient, 'id' | 'totalAmount' | 'totalPrice' | 'unitPrice' | 'type'> & { totalAmount?: number }) {
+  function addCompoundIngredient(
+    ingredient: Omit<
+      CompoundIngredient,
+      'id' | 'totalAmount' | 'totalPrice' | 'unitPrice' | 'type'
+    > & { totalAmount?: number },
+  ) {
     const { totalAmount, totalPrice, unitPrice } = calculateCompoundDetails({
       ...ingredient,
-      type: '複合材料'
+      type: '複合材料',
     })
-    
+
     ingredients.value.push({
       id: Date.now(),
       type: '複合材料',
@@ -155,34 +182,33 @@ export const useIngredientsStore = defineStore('ingredients', () => {
       totalAmount,
       totalPrice,
       unitPrice,
-      instructions: ingredient.instructions
+      instructions: ingredient.instructions,
     })
     saveIngredients()
   }
 
   function removeIngredient(id: number) {
     // Check if the ingredient is used in any compound ingredients
-    const isUsedInCompound = ingredients.value.some(ing => 
-      ing.type === '複合材料' && 
-      ing.ingredients.some(i => i.ingredientId === id)
+    const isUsedInCompound = ingredients.value.some(
+      (ing) => ing.type === '複合材料' && ing.ingredients.some((i) => i.ingredientId === id),
     )
 
     if (isUsedInCompound) {
       throw new Error('This ingredient is used in compound ingredients and cannot be deleted')
     }
 
-    ingredients.value = ingredients.value.filter(ing => ing.id !== id)
+    ingredients.value = ingredients.value.filter((ing) => ing.id !== id)
     saveIngredients()
   }
 
   // Update recipes that use this ingredient
   function updateRecipesWithIngredient(updatedIngredient: Ingredient) {
     const recipesStore = useRecipesStore()
-    recipesStore.recipes.forEach(recipe => {
+    recipesStore.recipes.forEach((recipe) => {
       let recipeUpdated = false
-      
+
       // Update main ingredients
-      recipe.ingredients.forEach(ing => {
+      recipe.ingredients.forEach((ing) => {
         if (ing.ingredientId === updatedIngredient.id) {
           ing.unitPrice = updatedIngredient.unitPrice
           ing.name = updatedIngredient.name
@@ -196,7 +222,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
       })
 
       // Update garnishes
-      recipe.garnishes.forEach(ing => {
+      recipe.garnishes.forEach((ing) => {
         if (ing.ingredientId === updatedIngredient.id) {
           ing.unitPrice = updatedIngredient.unitPrice
           ing.name = updatedIngredient.name
@@ -212,8 +238,8 @@ export const useIngredientsStore = defineStore('ingredients', () => {
       // Recalculate total cost if recipe was updated
       if (recipeUpdated) {
         recipe.totalCost = [...recipe.ingredients, ...recipe.garnishes].reduce(
-          (total, ing) => total + (ing.amount * ing.unitPrice),
-          0
+          (total, ing) => total + ing.amount * ing.unitPrice,
+          0,
         )
       }
     })
@@ -223,7 +249,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
   }
 
   function updateIngredient(updatedIngredient: Ingredient) {
-    const index = ingredients.value.findIndex(ing => ing.id === updatedIngredient.id)
+    const index = ingredients.value.findIndex((ing) => ing.id === updatedIngredient.id)
     if (index === -1) return
 
     if (updatedIngredient.type === '複合材料') {
@@ -232,7 +258,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
         ...updatedIngredient,
         totalAmount,
         totalPrice,
-        unitPrice
+        unitPrice,
       }
     }
 
@@ -244,8 +270,8 @@ export const useIngredientsStore = defineStore('ingredients', () => {
   }
 
   // Get all single ingredients for use in compound ingredients
-  const singleIngredients = computed(() => 
-    ingredients.value.filter((ing): ing is SingleIngredient => ing.type === '單一材料')
+  const singleIngredients = computed(() =>
+    ingredients.value.filter((ing): ing is SingleIngredient => ing.type === '單一材料'),
   )
 
   return {
@@ -255,6 +281,6 @@ export const useIngredientsStore = defineStore('ingredients', () => {
     addCompoundIngredient,
     removeIngredient,
     updateIngredient,
-    loadSavedIngredients
+    loadSavedIngredients,
   }
-}) 
+})

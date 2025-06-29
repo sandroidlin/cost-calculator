@@ -19,7 +19,8 @@ export const useAuthStore = defineStore('auth', () => {
       await db.auth.sendMagicCode({ email })
       sentEmail.value = email
     } catch (err: unknown) {
-      error.value = (err as { body?: { message?: string } }).body?.message || 'Failed to send magic code'
+      error.value =
+        (err as { body?: { message?: string } }).body?.message || 'Failed to send magic code'
       sentEmail.value = ''
       throw err
     } finally {
@@ -63,11 +64,11 @@ export const useAuthStore = defineStore('auth', () => {
     error: computed(() => authError.value?.message || error.value),
     sentEmail,
     isAuthenticated,
-    
+
     // Actions
     sendMagicCode,
     signInWithMagicCode,
     signOut,
-    clearError
+    clearError,
   }
 })

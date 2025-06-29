@@ -22,19 +22,17 @@ const notificationMessage = ref('')
 const selectedStatus = ref<RecipeStatus>('complete')
 
 const filteredRecipes = computed(() => {
-  return recipes.value.filter(recipe => recipe.status === selectedStatus.value)
+  return recipes.value.filter((recipe) => recipe.status === selectedStatus.value)
 })
 
 const recipeCounts = computed(() => ({
-  draft: recipes.value.filter(recipe => recipe.status === 'draft').length,
-  complete: recipes.value.filter(recipe => recipe.status === 'complete').length
+  draft: recipes.value.filter((recipe) => recipe.status === 'draft').length,
+  complete: recipes.value.filter((recipe) => recipe.status === 'complete').length,
 }))
 
 const closeCreateDialog = () => {
   showCreateDialog.value = false
 }
-
-
 
 const openRecipeDialog = (recipe: Recipe) => {
   if (recipe.status === 'draft') {
@@ -58,9 +56,9 @@ const openEditDialog = (recipe: Recipe) => {
 }
 
 const handleSaveRecipe = (recipe: Recipe) => {
-  if (recipe.id && recipes.value.find(r => r.id === recipe.id)) {
+  if (recipe.id && recipes.value.find((r) => r.id === recipe.id)) {
     // Update existing recipe
-    const index = recipes.value.findIndex(r => r.id === recipe.id)
+    const index = recipes.value.findIndex((r) => r.id === recipe.id)
     if (index !== -1) {
       recipes.value[index] = recipe
       recipesStore.saveRecipes()
@@ -90,7 +88,6 @@ const closeEditDialog = () => {
   showEditDialog.value = false
   selectedRecipe.value = null
 }
-
 </script>
 
 <template>
@@ -98,13 +95,13 @@ const closeEditDialog = () => {
     <div class="header">
       <h2>酒譜一覽</h2>
       <button class="add-btn" @click="showCreateDialog = true">
-        <span class="plus-icon">+</span> 新增酒譜 
+        <span class="plus-icon">+</span> 新增酒譜
       </button>
     </div>
 
     <div class="tab-container">
       <div class="tabs">
-        <button 
+        <button
           class="tab-btn"
           :class="{ active: selectedStatus === 'complete' }"
           @click="selectedStatus = 'complete'"
@@ -112,7 +109,7 @@ const closeEditDialog = () => {
           完成區
           <span class="badge">{{ recipeCounts.complete }}</span>
         </button>
-        <button 
+        <button
           class="tab-btn"
           :class="{ active: selectedStatus === 'draft' }"
           @click="selectedStatus = 'draft'"
@@ -125,15 +122,13 @@ const closeEditDialog = () => {
 
     <div v-if="recipes.length === 0" class="empty-state">
       <p>尚未新增任何酒譜</p>
-      <button class="add-recipe-btn" @click="showCreateDialog = true">
-        立即新增第一個酒譜
-      </button>
+      <button class="add-recipe-btn" @click="showCreateDialog = true">立即新增第一個酒譜</button>
     </div>
-    
+
     <template v-else>
       <div v-if="filteredRecipes.length > 0" class="recipes-grid">
-        <div 
-          v-for="recipe in filteredRecipes" 
+        <div
+          v-for="recipe in filteredRecipes"
           :key="recipe.id"
           class="recipe-card"
           @click="openRecipeDialog(recipe)"
@@ -152,9 +147,7 @@ const closeEditDialog = () => {
       </div>
       <div v-else class="empty-state">
         <p>此分類中尚無酒譜</p>
-        <button class="add-recipe-btn" @click="showCreateDialog = true">
-          新增酒譜
-        </button>
+        <button class="add-recipe-btn" @click="showCreateDialog = true">新增酒譜</button>
       </div>
     </template>
 
@@ -174,7 +167,7 @@ const closeEditDialog = () => {
           <h2>新增酒譜</h2>
           <button class="close-btn" @click="closeCreateDialog">✕</button>
         </div>
-        
+
         <RecipeForm
           :ingredients="ingredients"
           mode="create"
@@ -191,7 +184,7 @@ const closeEditDialog = () => {
           <h2>修改酒譜</h2>
           <button class="close-btn" @click="closeEditDialog">✕</button>
         </div>
-        
+
         <RecipeForm
           :ingredients="ingredients"
           :initial-recipe="selectedRecipe"
@@ -203,11 +196,7 @@ const closeEditDialog = () => {
     </div>
 
     <!-- Notification -->
-    <div 
-      v-if="showNotification" 
-      class="notification"
-      @click="showNotification = false"
-    >
+    <div v-if="showNotification" class="notification" @click="showNotification = false">
       {{ notificationMessage }}
     </div>
   </div>
@@ -877,7 +866,7 @@ const closeEditDialog = () => {
   cursor: pointer;
 }
 
-.radio-label input[type="radio"] {
+.radio-label input[type='radio'] {
   appearance: none;
   width: 1.125rem;
   height: 1.125rem;
@@ -888,11 +877,11 @@ const closeEditDialog = () => {
   cursor: pointer;
 }
 
-.radio-label input[type="radio"]:checked {
+.radio-label input[type='radio']:checked {
   border-color: var(--primary-color);
 }
 
-.radio-label input[type="radio"]:checked::after {
+.radio-label input[type='radio']:checked::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -1050,4 +1039,4 @@ const closeEditDialog = () => {
   background: var(--primary-color);
   color: white;
 }
-</style> 
+</style>

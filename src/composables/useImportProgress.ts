@@ -15,7 +15,7 @@ const progressState = reactive<ImportProgress>({
   percentage: 0,
   subtitle: '',
   current: 0,
-  total: 0
+  total: 0,
 })
 
 export function useImportProgress() {
@@ -31,7 +31,7 @@ export function useImportProgress() {
   const updateProgress = (current: number, itemName?: string) => {
     progressState.current = current
     progressState.percentage = (current / progressState.total) * 100
-    
+
     if (itemName) {
       progressState.subtitle = `${current} of ${progressState.total} items - ${itemName}`
     } else {
@@ -42,7 +42,7 @@ export function useImportProgress() {
   const completeImport = (successMessage?: string) => {
     progressState.percentage = 100
     progressState.subtitle = successMessage || `Completed ${progressState.total} items`
-    
+
     // Hide after a short delay to show completion
     setTimeout(() => {
       progressState.visible = false
@@ -58,6 +58,6 @@ export function useImportProgress() {
     startImport,
     updateProgress,
     completeImport,
-    hideProgress
+    hideProgress,
   }
 }

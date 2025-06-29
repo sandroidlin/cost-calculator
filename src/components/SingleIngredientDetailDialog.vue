@@ -23,7 +23,7 @@ const emit = defineEmits<{
         </div>
         <button class="close-btn" @click="emit('close')">✕</button>
       </div>
-      
+
       <div class="dialog-content">
         <div class="detail-section">
           <div class="detail-row">
@@ -45,18 +45,8 @@ const emit = defineEmits<{
         </div>
 
         <div class="dialog-actions">
-          <button 
-            class="edit-btn"
-            @click="emit('edit', ingredient)"
-          >
-            修改材料
-          </button>
-          <button 
-            class="delete-btn"
-            @click="emit('delete', ingredient.id)"
-          >
-            刪除材料
-          </button>
+          <button class="edit-btn" @click="emit('edit', ingredient)">修改材料</button>
+          <button class="delete-btn" @click="emit('delete', ingredient.id)">刪除材料</button>
         </div>
       </div>
     </div>
@@ -199,4 +189,4 @@ const emit = defineEmits<{
 .delete-btn:hover {
   background: #fff5f5;
 }
-</style> 
+</style>

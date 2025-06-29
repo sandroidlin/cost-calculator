@@ -3,18 +3,10 @@
     <div class="workspace-header">
       <h3>{{ currentWorkspace ? currentWorkspace.name : 'Personal Workspace' }}</h3>
       <div class="workspace-actions">
-        <button 
-          class="btn-secondary" 
-          @click="showWorkspaceDialog = true"
-          :disabled="isLoading"
-        >
+        <button class="btn-secondary" @click="showWorkspaceDialog = true" :disabled="isLoading">
           Switch Workspace
         </button>
-        <button 
-          class="btn-primary" 
-          @click="showCreateDialog = true"
-          :disabled="isLoading"
-        >
+        <button class="btn-primary" @click="showCreateDialog = true" :disabled="isLoading">
           Create Workspace
         </button>
       </div>
@@ -27,10 +19,10 @@
           <h3>Select Workspace</h3>
           <button class="btn-icon" @click="closeWorkspaceDialog">×</button>
         </div>
-        
+
         <div class="dialog-content">
           <div class="workspace-list">
-            <div 
+            <div
               class="workspace-item"
               :class="{ active: !currentWorkspaceId }"
               @click="switchToPersonal"
@@ -42,8 +34,8 @@
               <div class="workspace-role">Owner</div>
             </div>
 
-            <div 
-              v-for="workspace in workspaces" 
+            <div
+              v-for="workspace in workspaces"
               :key="workspace.id"
               class="workspace-item"
               :class="{ active: currentWorkspaceId === workspace.id }"
@@ -58,9 +50,7 @@
           </div>
 
           <div class="dialog-actions">
-            <button class="btn-secondary" @click="showJoinDialog = true">
-              Join Workspace
-            </button>
+            <button class="btn-secondary" @click="showJoinDialog = true">Join Workspace</button>
           </div>
         </div>
       </div>
@@ -73,7 +63,7 @@
           <h3>Create New Workspace</h3>
           <button class="btn-icon" @click="closeCreateDialog">×</button>
         </div>
-        
+
         <form @submit.prevent="handleCreateWorkspace" class="dialog-content">
           <div class="form-group">
             <label for="workspace-name">Workspace Name *</label>
@@ -98,10 +88,7 @@
 
           <div class="form-group">
             <label>
-              <input 
-                type="checkbox" 
-                v-model="migratePersonalData"
-              />
+              <input type="checkbox" v-model="migratePersonalData" />
               Transfer my personal data to this workspace
             </label>
             <p class="form-help">
@@ -110,16 +97,16 @@
           </div>
 
           <div class="dialog-actions">
-            <button 
-              type="button" 
-              class="btn-secondary" 
+            <button
+              type="button"
+              class="btn-secondary"
               @click="closeCreateDialog"
               :disabled="isLoading"
             >
               Cancel
             </button>
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               class="btn-primary"
               :disabled="isLoading || !newWorkspace.name.trim()"
             >
@@ -137,7 +124,7 @@
           <h3>Join Workspace</h3>
           <button class="btn-icon" @click="closeJoinDialog">×</button>
         </div>
-        
+
         <form @submit.prevent="handleAcceptInvite" class="dialog-content">
           <div class="form-group">
             <label for="invite-token">Invitation Token *</label>
@@ -148,25 +135,19 @@
               required
               placeholder="Enter invitation token"
             />
-            <p class="form-help">
-              Ask a workspace member for an invitation token
-            </p>
+            <p class="form-help">Ask a workspace member for an invitation token</p>
           </div>
 
           <div class="dialog-actions">
-            <button 
-              type="button" 
-              class="btn-secondary" 
+            <button
+              type="button"
+              class="btn-secondary"
               @click="closeJoinDialog"
               :disabled="isLoading"
             >
               Cancel
             </button>
-            <button 
-              type="submit" 
-              class="btn-primary"
-              :disabled="isLoading || !inviteToken.trim()"
-            >
+            <button type="submit" class="btn-primary" :disabled="isLoading || !inviteToken.trim()">
               {{ isLoading ? 'Joining...' : 'Join Workspace' }}
             </button>
           </div>
@@ -197,7 +178,7 @@ const {
   switchToWorkspace: switchWorkspace,
   acceptInvite,
   migrateDataToWorkspace,
-  clearError
+  clearError,
 } = workspacesStore
 
 // Dialog states
@@ -208,7 +189,7 @@ const showJoinDialog = ref(false)
 // Form data
 const newWorkspace = ref({
   name: '',
-  description: ''
+  description: '',
 })
 const migratePersonalData = ref(false)
 const inviteToken = ref('')
@@ -244,7 +225,7 @@ const handleCreateWorkspace = async () => {
   try {
     const workspace = await createWorkspace(
       newWorkspace.value.name.trim(),
-      newWorkspace.value.description.trim()
+      newWorkspace.value.description.trim(),
     )
 
     if (migratePersonalData.value && workspace?.id) {
@@ -252,7 +233,7 @@ const handleCreateWorkspace = async () => {
     }
 
     closeCreateDialog()
-    
+
     if (workspace?.id) {
       switchWorkspace(workspace.id)
     }
@@ -265,7 +246,7 @@ const handleAcceptInvite = async () => {
   try {
     const workspace = await acceptInvite(inviteToken.value.trim())
     closeJoinDialog()
-    
+
     if (workspace?.id) {
       switchWorkspace(workspace.id)
     }
@@ -414,7 +395,7 @@ onMounted(() => {
   font-size: 1rem;
 }
 
-.form-group input[type="checkbox"] {
+.form-group input[type='checkbox'] {
   width: auto;
   margin-right: 0.5rem;
 }

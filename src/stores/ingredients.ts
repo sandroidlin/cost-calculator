@@ -7,7 +7,16 @@ import { db } from '@/utils/instant'
 import { useImportProgress } from '@/composables/useImportProgress'
 
 export type UnitType = 'ml' | 'g' | 'dash' | '份'
-export type CategoryType = '基酒' | '利口酒' | '裝飾' | '果汁果泥' | '苦精' | '酸' | '甜' | '調味料' | '其他'
+export type CategoryType =
+  | '基酒'
+  | '利口酒'
+  | '裝飾'
+  | '果汁果泥'
+  | '苦精'
+  | '酸'
+  | '甜'
+  | '調味料'
+  | '其他'
 export type IngredientType = '單一材料' | '複合材料'
 
 // Base interface for common properties
@@ -63,13 +72,23 @@ interface InstantDBIngredient {
 }
 
 export const UNIT_STEPS = {
-  'ml': 50,
-  'g': 10,
-  'dash': 1,
-  '份': 1
+  ml: 50,
+  g: 10,
+  dash: 1,
+  份: 1,
 } as const
 
-export const CATEGORIES: CategoryType[] = ['基酒', '利口酒', '裝飾', '果汁果泥', '苦精', '酸', '甜', '調味料', '其他']
+export const CATEGORIES: CategoryType[] = [
+  '基酒',
+  '利口酒',
+  '裝飾',
+  '果汁果泥',
+  '苦精',
+  '酸',
+  '甜',
+  '調味料',
+  '其他',
+]
 
 export const useIngredientsStore = defineStore('ingredients', () => {
   const authStore = useAuthStore()
@@ -85,7 +104,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
   // Build query filter based on current workspace context
   const queryFilter = computed(() => {
     if (!authStore.user?.id) return {}
-    
+
     if (workspacesStore.isWorkspaceMode && workspacesStore.currentWorkspaceId) {
       // Workspace mode: show workspace ingredients
       return { where: { workspaceId: workspacesStore.currentWorkspaceId } }
@@ -96,15 +115,18 @@ export const useIngredientsStore = defineStore('ingredients', () => {
   })
 
   // Query ingredients from InstantDB - direct reactive approach
-  const { isLoading: queryLoading, error: queryError, data: instantData } = db.useQuery(
+  const {
+    isLoading: queryLoading,
+    error: queryError,
+    data: instantData,
+  } = db.useQuery(
     computed(() => ({
       ingredients: {
         $: queryFilter.value,
-        compoundIngredients: {}
-      }
-    }))
+        compoundIngredients: {},
+      },
+    })),
   )
-
 
   // Sync InstantDB data to local state
   const syncFromInstant = () => {
@@ -116,7 +138,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
           category: item.category as CategoryType,
           type: item.type as IngredientType,
           unitPrice: item.unitPrice,
-          totalPrice: item.totalPrice
+          totalPrice: item.totalPrice,
         }
 
         if (item.type === '複合材料') {
@@ -124,19 +146,20 @@ export const useIngredientsStore = defineStore('ingredients', () => {
             ...baseIngredient,
             type: '複合材料' as const,
             mainUnit: item.mainUnit as UnitType,
-            ingredients: item.compoundIngredients?.map((ci: InstantDBCompoundIngredient) => ({
-              ingredientId: ci.ingredientId,
-              amount: ci.amount
-            })) || [],
+            ingredients:
+              item.compoundIngredients?.map((ci: InstantDBCompoundIngredient) => ({
+                ingredientId: ci.ingredientId,
+                amount: ci.amount,
+              })) || [],
             totalAmount: item.totalAmount ?? 0,
-            instructions: item.instructions || ''
+            instructions: item.instructions || '',
           }
         } else {
           return {
             ...baseIngredient,
             type: '單一材料' as const,
             amount: item.amount ?? 0,
-            unit: item.unit as UnitType
+            unit: item.unit as UnitType,
           }
         }
       })
@@ -166,7 +189,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
             totalAmount: item.totalAmount,
             totalPrice: item.totalPrice,
             unitPrice: item.unitPrice,
-            instructions: item.instructions
+            instructions: item.instructions,
           }
         } else {
           return {
@@ -177,7 +200,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
             amount: item.amount,
             unit: item.unit as UnitType,
             totalPrice: item.totalPrice,
-            unitPrice: item.unitPrice
+            unitPrice: item.unitPrice,
           }
         }
       })
@@ -203,7 +226,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
         unitPrice: ingredient.unitPrice,
         totalPrice: ingredient.totalPrice,
         updatedAt: now,
-        workspaceId: workspacesStore.currentWorkspaceId || null
+        workspaceId: workspacesStore.currentWorkspaceId || null,
       }
 
       const ingredientId = crypto.randomUUID()
@@ -213,21 +236,19 @@ export const useIngredientsStore = defineStore('ingredients', () => {
           ...baseData,
           amount: ingredient.amount,
           unit: ingredient.unit,
-          createdAt: now
+          createdAt: now,
         })
-        
+
         // Link to user for personal ingredients, workspace for workspace ingredients
         if (workspacesStore.isWorkspaceMode && workspacesStore.currentWorkspaceId) {
           await db.transact(
-            transaction.link({ 
+            transaction.link({
               $user: authStore.user.id,
-              workspace: workspacesStore.currentWorkspaceId 
-            })
+              workspace: workspacesStore.currentWorkspaceId,
+            }),
           )
         } else {
-          await db.transact(
-            transaction.link({ $user: authStore.user.id })
-          )
+          await db.transact(transaction.link({ $user: authStore.user.id }))
         }
       } else {
         const mainTransaction = db.tx.ingredients[ingredientId].update({
@@ -235,25 +256,28 @@ export const useIngredientsStore = defineStore('ingredients', () => {
           mainUnit: ingredient.mainUnit,
           totalAmount: ingredient.totalAmount,
           instructions: ingredient.instructions,
-          createdAt: now
+          createdAt: now,
         })
 
-        const linkedTransaction = workspacesStore.isWorkspaceMode && workspacesStore.currentWorkspaceId
-          ? mainTransaction.link({ 
-              $user: authStore.user.id,
-              workspace: workspacesStore.currentWorkspaceId 
-            })
-          : mainTransaction.link({ $user: authStore.user.id })
+        const linkedTransaction =
+          workspacesStore.isWorkspaceMode && workspacesStore.currentWorkspaceId
+            ? mainTransaction.link({
+                $user: authStore.user.id,
+                workspace: workspacesStore.currentWorkspaceId,
+              })
+            : mainTransaction.link({ $user: authStore.user.id })
 
         await db.transact([
           linkedTransaction,
           // Handle compound ingredients separately
-          ...ingredient.ingredients.map(comp =>
-            db.tx.compound_ingredients[crypto.randomUUID()].update({
-              ingredientId: comp.ingredientId,
-              amount: comp.amount
-            }).link({ ingredient: ingredientId })
-          )
+          ...ingredient.ingredients.map((comp) =>
+            db.tx.compound_ingredients[crypto.randomUUID()]
+              .update({
+                ingredientId: comp.ingredientId,
+                amount: comp.amount,
+              })
+              .link({ ingredient: ingredientId }),
+          ),
         ])
       }
     } catch (err: unknown) {
@@ -327,19 +351,23 @@ export const useIngredientsStore = defineStore('ingredients', () => {
   }
 
   // Watch for authentication state changes and handle data migration
-  watch(() => authStore.isAuthenticated, async (isAuth, wasAuth) => {
-    if (isAuth && !wasAuth) {
-      // User just signed in - migrate localStorage data to InstantDB
-      await migrateLocalDataToInstant()
-      // Then sync from InstantDB to get the latest data
-      syncFromInstant()
-    } else if (!isAuth && wasAuth) {
-      // User just signed out - cache current data to localStorage
-      cacheInstantDataLocally()
-      // Then load from localStorage
-      loadSavedIngredients()
-    }
-  }, { immediate: false })
+  watch(
+    () => authStore.isAuthenticated,
+    async (isAuth, wasAuth) => {
+      if (isAuth && !wasAuth) {
+        // User just signed in - migrate localStorage data to InstantDB
+        await migrateLocalDataToInstant()
+        // Then sync from InstantDB to get the latest data
+        syncFromInstant()
+      } else if (!isAuth && wasAuth) {
+        // User just signed out - cache current data to localStorage
+        cacheInstantDataLocally()
+        // Then load from localStorage
+        loadSavedIngredients()
+      }
+    },
+    { immediate: false },
+  )
 
   // Initial load based on authentication state
   if (authStore.isAuthenticated) {
@@ -350,13 +378,16 @@ export const useIngredientsStore = defineStore('ingredients', () => {
 
   // Helper function to calculate compound ingredient details
   const calculateCompoundDetails = (
-    compoundIngredient: Omit<CompoundIngredient, 'totalAmount' | 'totalPrice' | 'unitPrice' | 'id' | 'type'> & { type: '複合材料', totalAmount?: number }
+    compoundIngredient: Omit<
+      CompoundIngredient,
+      'totalAmount' | 'totalPrice' | 'unitPrice' | 'id' | 'type'
+    > & { type: '複合材料'; totalAmount?: number },
   ) => {
     let calculatedTotalAmount = 0
     let totalPrice = 0
 
     compoundIngredient.ingredients.forEach(({ ingredientId, amount }) => {
-      const ingredient = ingredients.value.find(ing => ing.id === ingredientId)
+      const ingredient = ingredients.value.find((ing) => ing.id === ingredientId)
       if (!ingredient || ingredient.type !== '單一材料') return
 
       // Only add to totalAmount if the unit matches mainUnit
@@ -376,7 +407,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
     return {
       totalAmount,
       totalPrice,
-      unitPrice
+      unitPrice,
     }
   }
 
@@ -386,7 +417,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
       id: Date.now(),
       type: '單一材料',
       ...ingredient,
-      unitPrice
+      unitPrice,
     }
 
     ingredients.value.push(newIngredient)
@@ -398,10 +429,15 @@ export const useIngredientsStore = defineStore('ingredients', () => {
     }
   }
 
-  function addCompoundIngredient(ingredient: Omit<CompoundIngredient, 'id' | 'totalAmount' | 'totalPrice' | 'unitPrice' | 'type'> & { totalAmount?: number }) {
+  function addCompoundIngredient(
+    ingredient: Omit<
+      CompoundIngredient,
+      'id' | 'totalAmount' | 'totalPrice' | 'unitPrice' | 'type'
+    > & { totalAmount?: number },
+  ) {
     const { totalAmount, totalPrice, unitPrice } = calculateCompoundDetails({
       ...ingredient,
-      type: '複合材料'
+      type: '複合材料',
     })
 
     const newIngredient: CompoundIngredient = {
@@ -411,7 +447,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
       totalAmount,
       totalPrice,
       unitPrice,
-      instructions: ingredient.instructions
+      instructions: ingredient.instructions,
     }
 
     ingredients.value.push(newIngredient)
@@ -424,7 +460,9 @@ export const useIngredientsStore = defineStore('ingredients', () => {
   }
 
   function updateIngredient(updatedIngredient: Ingredient) {
-    const index = ingredients.value.findIndex(ingredient => ingredient.id === updatedIngredient.id)
+    const index = ingredients.value.findIndex(
+      (ingredient) => ingredient.id === updatedIngredient.id,
+    )
     if (index === -1) return
 
     // Recalculate details if it's a compound ingredient
@@ -450,9 +488,10 @@ export const useIngredientsStore = defineStore('ingredients', () => {
   function removeIngredient(id: number) {
     // Check if this ingredient is used in any recipes
     const recipesStore = useRecipesStore()
-    const isUsedInRecipes = recipesStore.recipes.some(recipe =>
-      recipe.ingredients.some(ing => ing.ingredientId === id) ||
-      recipe.garnishes.some(ing => ing.ingredientId === id)
+    const isUsedInRecipes = recipesStore.recipes.some(
+      (recipe) =>
+        recipe.ingredients.some((ing) => ing.ingredientId === id) ||
+        recipe.garnishes.some((ing) => ing.ingredientId === id),
     )
 
     if (isUsedInRecipes) {
@@ -460,16 +499,17 @@ export const useIngredientsStore = defineStore('ingredients', () => {
     }
 
     // Check if this ingredient is used in any compound ingredients
-    const isUsedInCompounds = ingredients.value.some(ingredient =>
-      ingredient.type === '複合材料' &&
-      ingredient.ingredients.some(ing => ing.ingredientId === id)
+    const isUsedInCompounds = ingredients.value.some(
+      (ingredient) =>
+        ingredient.type === '複合材料' &&
+        ingredient.ingredients.some((ing) => ing.ingredientId === id),
     )
 
     if (isUsedInCompounds) {
       throw new Error('Cannot delete ingredient that is used in compound ingredients')
     }
 
-    ingredients.value = ingredients.value.filter(ingredient => ingredient.id !== id)
+    ingredients.value = ingredients.value.filter((ingredient) => ingredient.id !== id)
     saveIngredients()
 
     // Delete from InstantDB if authenticated
@@ -484,7 +524,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
   })
 
   const getIngredientById = computed(() => {
-    return (id: number) => ingredients.value.find(ingredient => ingredient.id === id)
+    return (id: number) => ingredients.value.find((ingredient) => ingredient.id === id)
   })
 
   // Import data method that handles both storage backends
@@ -517,24 +557,32 @@ export const useIngredientsStore = defineStore('ingredients', () => {
   }
 
   // Watch for authentication state changes and handle data sync
-  watch(() => authStore.isAuthenticated, async (isAuth, wasAuth) => {
-    if (isAuth && !wasAuth) {
-      // User just signed in - first migrate local data if any, then sync from InstantDB
-      await migrateLocalDataToInstant()
-      syncFromInstant()
-    } else if (!isAuth && wasAuth) {
-      // User just signed out - clear ALL data including localStorage for security
-      ingredients.value = [] // Clear reactive state immediately
-      localStorage.removeItem('ingredients') // Clear localStorage for security
-    }
-  }, { immediate: false })
+  watch(
+    () => authStore.isAuthenticated,
+    async (isAuth, wasAuth) => {
+      if (isAuth && !wasAuth) {
+        // User just signed in - first migrate local data if any, then sync from InstantDB
+        await migrateLocalDataToInstant()
+        syncFromInstant()
+      } else if (!isAuth && wasAuth) {
+        // User just signed out - clear ALL data including localStorage for security
+        ingredients.value = [] // Clear reactive state immediately
+        localStorage.removeItem('ingredients') // Clear localStorage for security
+      }
+    },
+    { immediate: false },
+  )
 
   // Also watch for data changes from InstantDB
-  watch(() => instantData.value, () => {
-    if (authStore.isAuthenticated) {
-      syncFromInstant()
-    }
-  }, { deep: true })
+  watch(
+    () => instantData.value,
+    () => {
+      if (authStore.isAuthenticated) {
+        syncFromInstant()
+      }
+    },
+    { deep: true },
+  )
 
   // Initial load based on authentication state
   if (authStore.isAuthenticated) {
@@ -563,6 +611,6 @@ export const useIngredientsStore = defineStore('ingredients', () => {
     showMigrationModal,
     migrationData,
     handleMigrationMerge,
-    handleMigrationDiscard
+    handleMigrationDiscard,
   }
 })

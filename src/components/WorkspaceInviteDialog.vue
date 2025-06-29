@@ -29,8 +29,8 @@
           </div>
 
           <div class="form-actions">
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               class="btn-primary"
               :disabled="isLoading || !inviteForm.email.trim()"
             >
@@ -43,11 +43,7 @@
         <div v-if="pendingInvites.length > 0" class="pending-invites">
           <h4>Pending Invitations</h4>
           <div class="invite-list">
-            <div 
-              v-for="invite in pendingInvites" 
-              :key="invite.id"
-              class="invite-item"
-            >
+            <div v-for="invite in pendingInvites" :key="invite.id" class="invite-item">
               <div class="invite-info">
                 <div class="invite-email">{{ invite.email }}</div>
                 <div class="invite-details">
@@ -58,15 +54,15 @@
                 </div>
               </div>
               <div class="invite-actions">
-                <button 
-                  class="btn-copy" 
+                <button
+                  class="btn-copy"
                   @click="copyInviteToken(invite.token)"
                   title="Copy invitation token"
                 >
                   Copy Token
                 </button>
-                <button 
-                  class="btn-danger-small" 
+                <button
+                  class="btn-danger-small"
                   @click="revokeInvite(invite.id)"
                   title="Revoke invitation"
                 >
@@ -81,18 +77,14 @@
         <div v-if="members.length > 0" class="current-members">
           <h4>Current Members</h4>
           <div class="member-list">
-            <div 
-              v-for="member in members" 
-              :key="member.id"
-              class="member-item"
-            >
+            <div v-for="member in members" :key="member.id" class="member-item">
               <div class="member-info">
                 <div class="member-email">{{ member.$user.email }}</div>
                 <div class="member-role">{{ member.role }}</div>
               </div>
               <div class="member-actions" v-if="member.role !== 'owner'">
-                <button 
-                  class="btn-danger-small" 
+                <button
+                  class="btn-danger-small"
                   @click="handleRemoveMember(member.id)"
                   title="Remove member"
                   :disabled="isLoading"
@@ -136,19 +128,13 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const workspacesStore = useWorkspacesStore()
-const { 
-  isLoading, 
-  error, 
-  inviteToWorkspace, 
-  getWorkspaceMembers, 
-  removeMember, 
-  clearError 
-} = workspacesStore
+const { isLoading, error, inviteToWorkspace, getWorkspaceMembers, removeMember, clearError } =
+  workspacesStore
 
 // Form state
 const inviteForm = ref({
   email: '',
-  role: 'editor' as 'editor' | 'viewer'
+  role: 'editor' as 'editor' | 'viewer',
 })
 
 // Data state
@@ -171,15 +157,15 @@ const handleSendInvite = async () => {
     const token = await inviteToWorkspace(
       props.workspaceId,
       inviteForm.value.email.trim(),
-      inviteForm.value.role
+      inviteForm.value.role,
     )
 
     // Show success with token
     successMessage.value = `Invitation sent! Token: ${token}`
-    
+
     // Reset form
     inviteForm.value = { email: '', role: 'editor' }
-    
+
     // Refresh invites list
     await loadPendingInvites()
   } catch (err) {
@@ -241,12 +227,15 @@ const formatExpiryDate = (date: Date) => {
 }
 
 // Load data when dialog opens
-watch(() => props.isOpen, (isOpen) => {
-  if (isOpen && props.workspaceId) {
-    loadMembers()
-    loadPendingInvites()
-  }
-})
+watch(
+  () => props.isOpen,
+  (isOpen) => {
+    if (isOpen && props.workspaceId) {
+      loadMembers()
+      loadPendingInvites()
+    }
+  },
+)
 
 onMounted(() => {
   if (props.isOpen && props.workspaceId) {

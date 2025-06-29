@@ -39,7 +39,7 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
     workspace_members: (WorkspaceMember & { workspace: Workspace })[]
   }>({
     workspaces: [],
-    workspace_members: []
+    workspace_members: [],
   })
 
   // Manual loading state
@@ -58,19 +58,18 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
 
       const { data } = await db.queryOnce({
         workspaces: {
-          $: { where: { $user: authStore.user.id } }
+          $: { where: { $user: authStore.user.id } },
         },
         workspace_members: {
           $: { where: { $user: authStore.user.id } },
-          workspace: {}
-        }
+          workspace: {},
+        },
       })
 
       workspacesData.value = {
         workspaces: data?.workspaces || [],
-        workspace_members: data?.workspace_members || []
+        workspace_members: data?.workspace_members || [],
       }
-
     } catch (err) {
       console.error('Failed to load workspaces:', err)
       dataError.value = (err as Error).message || 'Failed to load workspaces'
@@ -91,8 +90,8 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
 
     // Combine and deduplicate
     const allWorkspaces = [...ownedWorkspaces, ...memberWorkspaces]
-    const uniqueWorkspaces = allWorkspaces.filter((workspace, index, self) =>
-      index === self.findIndex(w => w.id === workspace.id)
+    const uniqueWorkspaces = allWorkspaces.filter(
+      (workspace, index, self) => index === self.findIndex((w) => w.id === workspace.id),
     )
 
     return uniqueWorkspaces
@@ -100,10 +99,25 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
 
   const currentWorkspace = computed(() => {
     if (!currentWorkspaceId.value) return null
-    return workspaces.value.find(w => w.id === currentWorkspaceId.value) || null
+    return workspaces.value.find((w) => w.id === currentWorkspaceId.value) || null
   })
 
   const isWorkspaceMode = computed(() => !!currentWorkspaceId.value)
+
+  // Get user's role in a specific workspace
+  const getUserRole = (workspaceId: string): 'owner' | 'editor' | 'viewer' | null => {
+    if (!authStore.user?.id) return null
+
+    // Check if user owns the workspace
+    const isOwner = workspacesData.value.workspaces.some((w) => w.id === workspaceId)
+    if (isOwner) return 'owner'
+
+    // Check if user is a member
+    const membership = workspacesData.value.workspace_members.find(
+      (m) => m.workspace.id === workspaceId,
+    )
+    return membership?.role || null
+  }
 
   // Create new workspace
   const createWorkspace = async (name: string, description?: string) => {
@@ -118,14 +132,16 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
       const workspaceId = crypto.randomUUID()
 
       await db.transact([
-        db.tx.workspaces[workspaceId].update({
-          name,
-          description: description || '',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }).link({
-          $user: authStore.user.id
-        })
+        db.tx.workspaces[workspaceId]
+          .update({
+            name,
+            description: description || '',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .link({
+            $user: authStore.user.id,
+          }),
       ])
 
       // Reload workspaces to show the new one
@@ -137,7 +153,7 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
         name,
         description: description || '',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       }
     } catch (err: unknown) {
       console.error('Error creating workspace:', err)
@@ -149,7 +165,10 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
   }
 
   // Update workspace
-  const updateWorkspace = async (workspaceId: string, updates: Partial<Pick<Workspace, 'name' | 'description'>>) => {
+  const updateWorkspace = async (
+    workspaceId: string,
+    updates: Partial<Pick<Workspace, 'name' | 'description'>>,
+  ) => {
     try {
       isLoading.value = true
       error.value = null
@@ -157,11 +176,48 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
       await db.transact([
         db.tx.workspaces[workspaceId].update({
           ...updates,
-          updatedAt: new Date()
-        })
+          updatedAt: new Date(),
+        }),
       ])
     } catch (err: unknown) {
       error.value = (err as Error).message || 'Failed to update workspace'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Delete workspace (owner only)
+  const deleteWorkspace = async (workspaceId: string) => {
+    if (!authStore.user?.id) {
+      throw new Error('Must be authenticated')
+    }
+
+    // Verify user is the owner
+    const userRole = getUserRole(workspaceId)
+    if (userRole !== 'owner') {
+      throw new Error('Only workspace owners can delete workspaces')
+    }
+
+    try {
+      isLoading.value = true
+      error.value = null
+
+      // Delete workspace and all related data
+      // InstantDB will handle cascading deletes for related entities
+      await db.transact([db.tx.workspaces[workspaceId].delete()])
+
+      // If the deleted workspace was currently active, switch to personal workspace
+      if (currentWorkspaceId.value === workspaceId) {
+        currentWorkspaceId.value = null
+        localStorage.removeItem('currentWorkspaceId')
+      }
+
+      // Reload workspaces to update the list
+      await loadWorkspaces()
+    } catch (err: unknown) {
+      console.error('Error deleting workspace:', err)
+      error.value = (err as Error).message || 'Failed to delete workspace'
       throw err
     } finally {
       isLoading.value = false
@@ -174,7 +230,11 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
   }
 
   // Send workspace invitation
-  const inviteToWorkspace = async (workspaceId: string, email: string, role: 'editor' | 'viewer') => {
+  const inviteToWorkspace = async (
+    workspaceId: string,
+    email: string,
+    role: 'editor' | 'viewer',
+  ) => {
     if (!authStore.user) throw new Error('Must be authenticated')
 
     try {
@@ -186,16 +246,18 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
       expiresAt.setDate(expiresAt.getDate() + 7) // 7 days expiry
 
       await db.transact([
-        db.tx.workspace_invites[db.id()].update({
-          email,
-          role,
-          token,
-          expiresAt,
-          createdAt: new Date()
-        }).link({
-          workspace: workspaceId,
-          inviter: authStore.user.id
-        })
+        db.tx.workspace_invites[db.id()]
+          .update({
+            email,
+            role,
+            token,
+            expiresAt,
+            createdAt: new Date(),
+          })
+          .link({
+            workspace: workspaceId,
+            inviter: authStore.user.id,
+          }),
       ])
 
       return token
@@ -219,8 +281,8 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
       const { data: inviteData } = await db.queryOnce({
         workspace_invites: {
           $: { where: { token } },
-          workspace: {}
-        }
+          workspace: {},
+        },
       })
 
       const invite = inviteData?.workspace_invites?.[0]
@@ -229,15 +291,17 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
 
       // Add user as member
       await db.transact([
-        db.tx.workspace_members[db.id()].update({
-          role: invite.role,
-          joinedAt: new Date()
-        }).link({
-          workspace: invite.workspace.id,
-          $user: authStore.user.id
-        }),
+        db.tx.workspace_members[db.id()]
+          .update({
+            role: invite.role,
+            joinedAt: new Date(),
+          })
+          .link({
+            workspace: invite.workspace.id,
+            $user: authStore.user.id,
+          }),
         // Delete the invite
-        db.tx.workspace_invites[invite.id].delete()
+        db.tx.workspace_invites[invite.id].delete(),
       ])
 
       return invite.workspace
@@ -249,16 +313,41 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
     }
   }
 
-  // Get workspace members
+  // Get workspace members including owner
   const getWorkspaceMembers = async (workspaceId: string) => {
     const { data } = await db.queryOnce({
       workspace_members: {
         $: { where: { 'workspace.id': workspaceId } },
-        $user: {}
-      }
+        $user: {},
+      },
+      workspaces: {
+        $: { where: { id: workspaceId } },
+        $user: {},
+      },
     })
 
-    return data?.workspace_members || []
+    const members = data?.workspace_members || []
+    const workspace = data?.workspaces?.[0]
+
+    // Add workspace owner to the members list
+    if (workspace && workspace.$user) {
+      const ownerMember = {
+        id: `owner-${workspace.id}`,
+        role: 'owner' as const,
+        joinedAt: workspace.createdAt,
+        $user: workspace.$user,
+      }
+
+      // Check if owner is not already in members list (shouldn't happen but just in case)
+      const isOwnerAlreadyMember = members.some(
+        (m: { $user: { id: string } }) => m.$user.id === workspace.$user.id,
+      )
+      if (!isOwnerAlreadyMember) {
+        members.unshift(ownerMember) // Add owner at the beginning
+      }
+    }
+
+    return members
   }
 
   // Remove member from workspace
@@ -267,9 +356,7 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
       isLoading.value = true
       error.value = null
 
-      await db.transact([
-        db.tx.workspace_members[memberId].delete()
-      ])
+      await db.transact([db.tx.workspace_members[memberId].delete()])
     } catch (err: unknown) {
       error.value = (err as Error).message || 'Failed to remove member'
       throw err
@@ -285,19 +372,21 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
     localStorage.setItem('currentWorkspaceId', workspaceId || '')
   }
 
-
   // Watch for authentication changes and reload data
-  watch(() => authStore.isAuthenticated, async (isAuth) => {
-    if (isAuth) {
-      // Load workspaces when user logs in
-      await loadWorkspaces()
-    } else {
-      // Clear data when user logs out
-      workspacesData.value = { workspaces: [], workspace_members: [] }
-      currentWorkspaceId.value = null
-      localStorage.removeItem('currentWorkspaceId')
-    }
-  })
+  watch(
+    () => authStore.isAuthenticated,
+    async (isAuth) => {
+      if (isAuth) {
+        // Load workspaces when user logs in
+        await loadWorkspaces()
+      } else {
+        // Clear data when user logs out
+        workspacesData.value = { workspaces: [], workspace_members: [] }
+        currentWorkspaceId.value = null
+        localStorage.removeItem('currentWorkspaceId')
+      }
+    },
+  )
 
   // Initialize workspace from localStorage and load data
   const initializeWorkspace = async () => {
@@ -307,7 +396,7 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
 
       // Then restore saved workspace
       const savedWorkspaceId = localStorage.getItem('currentWorkspaceId')
-      if (savedWorkspaceId && workspaces.value.some(w => w.id === savedWorkspaceId)) {
+      if (savedWorkspaceId && workspaces.value.some((w) => w.id === savedWorkspaceId)) {
         currentWorkspaceId.value = savedWorkspaceId
       }
     }
@@ -319,13 +408,13 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
 
     await loadWorkspaces()
 
-    if (urlWorkspaceId && workspaces.value.some(w => w.id === urlWorkspaceId)) {
+    if (urlWorkspaceId && workspaces.value.some((w) => w.id === urlWorkspaceId)) {
       currentWorkspaceId.value = urlWorkspaceId
       localStorage.setItem('currentWorkspaceId', urlWorkspaceId)
     } else {
       // Fallback to localStorage
       const savedWorkspaceId = localStorage.getItem('currentWorkspaceId')
-      if (savedWorkspaceId && workspaces.value.some(w => w.id === savedWorkspaceId)) {
+      if (savedWorkspaceId && workspaces.value.some((w) => w.id === savedWorkspaceId)) {
         currentWorkspaceId.value = savedWorkspaceId
       }
     }
@@ -342,11 +431,11 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
       // Get user's personal ingredients and recipes
       const { data } = await db.queryOnce({
         ingredients: {
-          $: { where: { '$user.id': authStore.user.id, workspaceId: null } }
+          $: { where: { '$user.id': authStore.user.id, workspaceId: null } },
         },
         recipes: {
-          $: { where: { '$user.id': authStore.user.id, workspaceId: null } }
-        }
+          $: { where: { '$user.id': authStore.user.id, workspaceId: null } },
+        },
       })
 
       const transactions = []
@@ -355,8 +444,8 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
       for (const ingredient of data?.ingredients || []) {
         transactions.push(
           db.tx.ingredients[ingredient.id].update({
-            workspaceId
-          })
+            workspaceId,
+          }),
         )
       }
 
@@ -364,15 +453,14 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
       for (const recipe of data?.recipes || []) {
         transactions.push(
           db.tx.recipes[recipe.id].update({
-            workspaceId
-          })
+            workspaceId,
+          }),
         )
       }
 
       if (transactions.length > 0) {
         await db.transact(transactions)
       }
-
     } catch (err: unknown) {
       error.value = (err as Error).message || 'Failed to migrate data'
       throw err
@@ -384,7 +472,6 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
   const clearError = () => {
     error.value = null
   }
-
 
   return {
     // State
@@ -398,6 +485,7 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
     // Actions
     createWorkspace,
     updateWorkspace,
+    deleteWorkspace,
     inviteToWorkspace,
     acceptInvite,
     getWorkspaceMembers,
@@ -407,6 +495,7 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
     migrateDataToWorkspace,
     clearError,
     loadWorkspaces,
-    initializeFromUrl
+    initializeFromUrl,
+    getUserRole,
   }
 })
