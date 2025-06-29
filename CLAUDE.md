@@ -95,3 +95,13 @@ VITE_BASE_PATH=/cost-calculator/  # For GitHub Pages
 - Data automatically syncs between local storage and cloud when user authenticates
 - Excel import/export functionality available via `xlsx` library
 - Hash-based routing used for better deployment compatibility
+
+## Code Quality Requirements
+
+**IMPORTANT**: Before completing any task that involves code changes, you MUST run the following commands and ensure they pass:
+
+1. **Linting**: `pnpm lint` - Must pass without errors
+2. **Type Checking**: `pnpm type-check` - Must pass without TypeScript errors
+3. **Build**: `pnpm build` - Must complete successfully
+
+These checks ensure code quality, type safety, and deployment readiness. Do not consider a task complete until all three commands pass successfully.
