@@ -235,7 +235,7 @@ const handleEditIngredient = (ingredient: Ingredient) => {
 <template>
   <div class="ingredients-manager">
     <div class="header">
-      <h2>材料一覽</h2>
+      <h2>{{ $t('nav.ingredients') }}</h2>
       <div class="button-group">
         <button class="add-btn" @click="showCompoundIngredientForm = true">
           <span class="plus-icon">+</span> 新增複合材料

@@ -72,7 +72,7 @@ const {
 } = workspacesStore
 
 const currentWorkspaceName = computed(() => {
-  return currentWorkspace.value?.name || 'Personal Workspace'
+  return currentWorkspace.value?.name || t('nav.personalWorkspace')
 })
 
 // Workspace actions with router integration

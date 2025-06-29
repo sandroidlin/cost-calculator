@@ -106,7 +106,7 @@ const closeEditDialog = () => {
           :class="{ active: selectedStatus === 'complete' }"
           @click="selectedStatus = 'complete'"
         >
-          完成區
+          {{ $t('recipe.completeZone') }}
           <span class="badge">{{ recipeCounts.complete }}</span>
         </button>
         <button
@@ -114,7 +114,7 @@ const closeEditDialog = () => {
           :class="{ active: selectedStatus === 'draft' }"
           @click="selectedStatus = 'draft'"
         >
-          暫存區
+          {{ $t('recipe.draftZone') }}
           <span class="badge">{{ recipeCounts.draft }}</span>
         </button>
       </div>

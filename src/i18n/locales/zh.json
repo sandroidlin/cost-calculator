@@ -90,7 +90,9 @@
     "ingredients": "材料",
     "noRecipes": "尚未建立任何酒譜",
     "createFirstRecipe": "建立您的第一個酒譜",
-    "searchRecipes": "搜尋酒譜..."
+    "searchRecipes": "搜尋酒譜...",
+    "completeZone": "完成區",
+    "draftZone": "暫存區"
   },
   "ingredient": {
     "ingredients": "材料",

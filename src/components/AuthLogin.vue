@@ -32,7 +32,7 @@ const handleCodeSubmit = (e: Event) => {
 
       <div v-else-if="authStore.isAuthenticated" class="authenticated">
         <h2>Welcome, {{ authStore.user?.email }}!</h2>
-        <button @click="authStore.signOut()" class="sign-out-btn">Sign Out</button>
+        <button @click="authStore.signOut()" class="sign-out-btn">{{ $t('nav.signOut') }}</button>
       </div>
 
       <div v-else-if="!authStore.sentEmail" class="email-step">

@@ -132,7 +132,7 @@ const saveIngredient = () => {
   <div class="dialog-overlay">
     <div class="dialog">
       <div class="dialog-header">
-        <h2>{{ mode === 'create' ? '新增複合材料' : '編輯複合材料' }}</h2>
+        <h2>{{ mode === 'create' ? $t('ingredient.newCompoundIngredient') : '編輯複合材料' }}</h2>
         <button class="close-btn" @click="emit('cancel')">✕</button>
       </div>
 
@@ -240,7 +240,7 @@ const saveIngredient = () => {
               !ingredientInputs.some((input) => input.ingredient && input.amount)
             "
           >
-            {{ mode === 'create' ? '新增複合材料' : '儲存變更' }}
+            {{ mode === 'create' ? $t('ingredient.newCompoundIngredient') : '儲存變更' }}
           </button>
         </div>
       </div>

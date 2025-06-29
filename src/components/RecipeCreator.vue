@@ -112,7 +112,7 @@ const saveRecipe = () => {
 
 <template>
   <div class="recipe-creator">
-    <h2>新增酒譜</h2>
+    <h2>{{ $t('recipe.newRecipe') }}</h2>
 
     <form @submit.prevent="saveRecipe" class="recipe-form">
       <div class="basic-info">

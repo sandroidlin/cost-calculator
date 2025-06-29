@@ -90,7 +90,9 @@
     "ingredients": "Ingredients",
     "noRecipes": "No recipes created yet",
     "createFirstRecipe": "Create your first recipe",
-    "searchRecipes": "Search recipes..."
+    "searchRecipes": "Search recipes...",
+    "completeZone": "Complete",
+    "draftZone": "Draft"
   },
   "ingredient": {
     "ingredients": "Ingredients",
