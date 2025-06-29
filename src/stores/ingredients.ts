@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { useRecipesStore } from './recipes'
 import { useAuthStore } from './auth'
+import { useWorkspacesStore } from './workspaces'
 import { db } from '@/utils/instant'
 import { useImportProgress } from '@/composables/useImportProgress'
 
@@ -72,6 +73,7 @@ export const CATEGORIES: CategoryType[] = ['基酒', '利口酒', '裝飾', '果
 
 export const useIngredientsStore = defineStore('ingredients', () => {
   const authStore = useAuthStore()
+  const workspacesStore = useWorkspacesStore()
   const ingredients = ref<Ingredient[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
@@ -80,13 +82,28 @@ export const useIngredientsStore = defineStore('ingredients', () => {
   const showMigrationModal = ref(false)
   const migrationData = ref<Ingredient[]>([])
 
-  // Query ingredients from InstantDB - direct reactive approach
-  const { isLoading: queryLoading, error: queryError, data: instantData } = db.useQuery({
-    ingredients: {
-      $: authStore.user?.id ? { where: { $user: authStore.user.id } } : {},
-      compoundIngredients: {}
+  // Build query filter based on current workspace context
+  const buildQueryFilter = () => {
+    if (!authStore.user?.id) return {}
+    
+    if (workspacesStore.isWorkspaceMode && workspacesStore.currentWorkspaceId) {
+      // Workspace mode: show workspace ingredients
+      return { where: { workspaceId: workspacesStore.currentWorkspaceId } }
+    } else {
+      // Personal mode: show user's personal ingredients (no workspaceId)
+      return { where: { $user: authStore.user.id, workspaceId: null } }
     }
-  })
+  }
+
+  // Query ingredients from InstantDB - direct reactive approach
+  const { isLoading: queryLoading, error: queryError, data: instantData } = db.useQuery(
+    computed(() => ({
+      ingredients: {
+        $: buildQueryFilter(),
+        compoundIngredients: {}
+      }
+    }))
+  )
 
   console.log('📊 Query setup complete, current state:', {
     loading: queryLoading.value,
@@ -196,29 +213,51 @@ export const useIngredientsStore = defineStore('ingredients', () => {
         type: ingredient.type,
         unitPrice: ingredient.unitPrice,
         totalPrice: ingredient.totalPrice,
-        updatedAt: now
+        updatedAt: now,
+        workspaceId: workspacesStore.currentWorkspaceId || null
       }
 
       const ingredientId = crypto.randomUUID()
 
       if (ingredient.type === '單一材料') {
-        await db.transact(
-          db.tx.ingredients[ingredientId].update({
-            ...baseData,
-            amount: ingredient.amount,
-            unit: ingredient.unit,
-            createdAt: now
-          }).link({ $user: authStore.user.id })
-        )
+        const transaction = db.tx.ingredients[ingredientId].update({
+          ...baseData,
+          amount: ingredient.amount,
+          unit: ingredient.unit,
+          createdAt: now
+        })
+        
+        // Link to user for personal ingredients, workspace for workspace ingredients
+        if (workspacesStore.isWorkspaceMode && workspacesStore.currentWorkspaceId) {
+          await db.transact(
+            transaction.link({ 
+              $user: authStore.user.id,
+              workspace: workspacesStore.currentWorkspaceId 
+            })
+          )
+        } else {
+          await db.transact(
+            transaction.link({ $user: authStore.user.id })
+          )
+        }
       } else {
+        const mainTransaction = db.tx.ingredients[ingredientId].update({
+          ...baseData,
+          mainUnit: ingredient.mainUnit,
+          totalAmount: ingredient.totalAmount,
+          instructions: ingredient.instructions,
+          createdAt: now
+        })
+
+        const linkedTransaction = workspacesStore.isWorkspaceMode && workspacesStore.currentWorkspaceId
+          ? mainTransaction.link({ 
+              $user: authStore.user.id,
+              workspace: workspacesStore.currentWorkspaceId 
+            })
+          : mainTransaction.link({ $user: authStore.user.id })
+
         await db.transact([
-          db.tx.ingredients[ingredientId].update({
-            ...baseData,
-            mainUnit: ingredient.mainUnit,
-            totalAmount: ingredient.totalAmount,
-            instructions: ingredient.instructions,
-            createdAt: now
-          }).link({ $user: authStore.user.id }),
+          linkedTransaction,
           // Handle compound ingredients separately
           ...ingredient.ingredients.map(comp =>
             db.tx.compound_ingredients[crypto.randomUUID()].update({

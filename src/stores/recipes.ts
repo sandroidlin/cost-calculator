@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { useAuthStore } from './auth'
+import { useWorkspacesStore } from './workspaces'
 import { db } from '@/utils/instant'
 import { useImportProgress } from '@/composables/useImportProgress'
 
@@ -61,6 +62,7 @@ interface InstantDBRecipe {
 
 export const useRecipesStore = defineStore('recipes', () => {
   const authStore = useAuthStore()
+  const workspacesStore = useWorkspacesStore()
   const recipes = ref<Recipe[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
@@ -69,13 +71,28 @@ export const useRecipesStore = defineStore('recipes', () => {
   const showMigrationModal = ref(false)
   const migrationData = ref<Recipe[]>([])
 
-  // Query recipes from InstantDB - direct reactive approach
-  const { isLoading: queryLoading, error: queryError, data: instantData } = db.useQuery({
-    recipes: {
-      $: authStore.user?.id ? { where: { $user: authStore.user.id } } : {},
-      recipeIngredients: {}
+  // Build query filter based on current workspace context
+  const buildQueryFilter = () => {
+    if (!authStore.user?.id) return {}
+    
+    if (workspacesStore.isWorkspaceMode && workspacesStore.currentWorkspaceId) {
+      // Workspace mode: show workspace recipes
+      return { where: { workspaceId: workspacesStore.currentWorkspaceId } }
+    } else {
+      // Personal mode: show user's personal recipes (no workspaceId)
+      return { where: { $user: authStore.user.id, workspaceId: null } }
     }
-  })
+  }
+
+  // Query recipes from InstantDB - direct reactive approach
+  const { isLoading: queryLoading, error: queryError, data: instantData } = db.useQuery(
+    computed(() => ({
+      recipes: {
+        $: buildQueryFilter(),
+        recipeIngredients: {}
+      }
+    }))
+  )
 
   console.log('🍸 Recipe query setup complete, current state:', {
     loading: queryLoading.value,
@@ -171,18 +188,29 @@ export const useRecipesStore = defineStore('recipes', () => {
       // Save recipe
       const recipeId = crypto.randomUUID()
       
+      const recipeTransaction = db.tx.recipes[recipeId].update({
+        name: recipe.name,
+        bartenderName: recipe.bartenderName,
+        glass: recipe.glass,
+        ice: recipe.ice,
+        method: recipe.method,
+        totalCost: recipe.totalCost,
+        status: recipe.status,
+        createdAt: now,
+        updatedAt: now,
+        workspaceId: workspacesStore.currentWorkspaceId || null
+      })
+
+      // Link to user and workspace if in workspace mode
+      const linkedRecipeTransaction = workspacesStore.isWorkspaceMode && workspacesStore.currentWorkspaceId
+        ? recipeTransaction.link({ 
+            $user: authStore.user.id,
+            workspace: workspacesStore.currentWorkspaceId 
+          })
+        : recipeTransaction.link({ $user: authStore.user.id })
+
       await db.transact([
-        db.tx.recipes[recipeId].update({
-          name: recipe.name,
-          bartenderName: recipe.bartenderName,
-          glass: recipe.glass,
-          ice: recipe.ice,
-          method: recipe.method,
-          totalCost: recipe.totalCost,
-          status: recipe.status,
-          createdAt: now,
-          updatedAt: now
-        }).link({ $user: authStore.user.id }),
+        linkedRecipeTransaction,
         // Save recipe ingredients
         ...recipe.ingredients.map((ingredient) =>
           db.tx.recipe_ingredients[crypto.randomUUID()].update({

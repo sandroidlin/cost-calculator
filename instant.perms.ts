@@ -1,48 +1,87 @@
 import type { InstantRules } from '@dorilama/instantdb-vue'
 
 const rules = {
-  "ingredients": {
+  "workspaces": {
     "allow": {
-      "view": "isOwner",
+      "view": "isOwnerOrMember",
       "create": "auth.id != null",
       "update": "isOwner",
       "delete": "isOwner",
     },
     "bind": [
-      "isOwner", "auth.id != null && auth.id in data.ref('$user.id')"
+      "isOwner", "auth.id != null && auth.id in data.ref('$user.id')",
+      "isOwnerOrMember", "auth.id != null && (auth.id in data.ref('$user.id') || auth.id in data.ref('members.$user.id'))"
+    ]
+  },
+  "workspace_members": {
+    "allow": {
+      "view": "isWorkspaceMember",
+      "create": "canManageWorkspace",
+      "update": "canManageWorkspace", 
+      "delete": "canRemoveMember",
+    },
+    "bind": [
+      "isWorkspaceMember", "auth.id != null && (auth.id in data.ref('workspace.$user.id') || auth.id in data.ref('workspace.members.$user.id'))",
+      "canManageWorkspace", "auth.id != null && auth.id in data.ref('workspace.$user.id')",
+      "canRemoveMember", "auth.id != null && (auth.id in data.ref('workspace.$user.id') || auth.id in data.ref('$user.id'))"
+    ]
+  },
+  "workspace_invites": {
+    "allow": {
+      "view": "canViewInvite",
+      "create": "canInvite",
+      "update": "canInvite",
+      "delete": "canInvite",
+    },
+    "bind": [
+      "canViewInvite", "auth.id != null && (auth.id in data.ref('workspace.$user.id') || auth.id in data.ref('inviter.id'))",
+      "canInvite", "auth.id != null && auth.id in data.ref('workspace.$user.id')"
+    ]
+  },
+  "ingredients": {
+    "allow": {
+      "view": "isOwnerOrWorkspaceMember",
+      "create": "auth.id != null",
+      "update": "isOwnerOrWorkspaceOwner",
+      "delete": "isOwnerOrWorkspaceOwner",
+    },
+    "bind": [
+      "isOwnerOrWorkspaceMember", "auth.id != null && (auth.id in data.ref('$user.id') || auth.id in data.ref('workspace.members.$user.id'))",
+      "isOwnerOrWorkspaceOwner", "auth.id != null && (auth.id in data.ref('$user.id') || auth.id in data.ref('workspace.$user.id'))"
     ]
   },
   "compound_ingredients": {
     "allow": {
-      "view": "isIngredientOwner",
+      "view": "isIngredientOwnerOrMember",
       "create": "auth.id != null",
-      "update": "isIngredientOwner",
-      "delete": "isIngredientOwner",
+      "update": "isIngredientOwnerOrMember",
+      "delete": "isIngredientOwnerOrMember",
     },
     "bind": [
-      "isIngredientOwner", "auth.id != null && auth.id in data.ref('ingredient.$user.id')"
+      "isIngredientOwnerOrMember", "auth.id != null && auth.id in data.ref('ingredient.$user.id')"
     ]
   },
   "recipes": {
     "allow": {
-      "view": "isOwner",
+      "view": "isRecipeOwnerOrWorkspaceMember",
       "create": "auth.id != null",
-      "update": "isOwner",
-      "delete": "isOwner",
+      "update": "isRecipeOwnerOrWorkspaceOwner",
+      "delete": "isRecipeOwnerOrWorkspaceOwner",
     },
     "bind": [
-      "isOwner", "auth.id != null && auth.id in data.ref('$user.id')"
+      "isRecipeOwnerOrWorkspaceMember", "auth.id != null && (auth.id in data.ref('$user.id') || auth.id in data.ref('workspace.members.$user.id'))",
+      "isRecipeOwnerOrWorkspaceOwner", "auth.id != null && (auth.id in data.ref('$user.id') || auth.id in data.ref('workspace.$user.id'))"
     ]
   },
   "recipe_ingredients": {
     "allow": {
-      "view": "isRecipeOwner",
+      "view": "isRecipeOwnerOrMember",
       "create": "auth.id != null",
-      "update": "isRecipeOwner",
-      "delete": "isRecipeOwner",
+      "update": "isRecipeOwnerOrMember",
+      "delete": "isRecipeOwnerOrMember",
     },
     "bind": [
-      "isRecipeOwner", "auth.id != null && auth.id in data.ref('recipe.$user.id')"
+      "isRecipeOwnerOrMember", "auth.id != null && auth.id in data.ref('recipe.$user.id')"
     ]
   },
   "$users": {
