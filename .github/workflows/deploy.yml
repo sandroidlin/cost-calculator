@@ -36,6 +36,7 @@ jobs:
           VITE_GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.VITE_GOOGLE_SERVICE_ACCOUNT_EMAIL }}
           VITE_GOOGLE_PRIVATE_KEY: ${{ secrets.VITE_GOOGLE_PRIVATE_KEY }}
           VITE_GOOGLE_SHEET_ID: ${{ secrets.VITE_GOOGLE_SHEET_ID }}
+          VITE_INSTANT_APP_ID: ${{ secrets.VITE_INSTANT_APP_ID }}
 
       - name: Upload static files as artifact
         id: deployment
