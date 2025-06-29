@@ -10,7 +10,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  update: [data: { ingredient: Ingredient | null, amount: number }]
+  update: [data: { ingredient: Ingredient | null; amount: number }]
   remove: []
 }>()
 
@@ -22,7 +22,7 @@ const searchQuery = ref(selectedIngredient.value?.name || '')
 const filteredIngredients = computed(() => {
   if (!searchQuery.value) return props.ingredients
   const query = searchQuery.value.toLowerCase()
-  return props.ingredients.filter(ing => ing.name.toLowerCase().includes(query))
+  return props.ingredients.filter((ing) => ing.name.toLowerCase().includes(query))
 })
 
 const getIngredientUnit = (ingredient: Ingredient): string => {
@@ -59,10 +59,10 @@ const subtotalCost = computed(() => {
           v-model="searchQuery"
           @focus="showDropdown = true"
           type="text"
-          placeholder="選擇材料"
-        >
+          :placeholder="$t('ingredient.selectIngredient')"
+        />
         <div v-if="showDropdown" class="dropdown">
-          <div 
+          <div
             v-for="ingredient in filteredIngredients"
             :key="ingredient.id"
             class="dropdown-item"
@@ -81,22 +81,21 @@ const subtotalCost = computed(() => {
           min="0"
           step="1"
           @input="updateAmount($event)"
-          :placeholder="selectedIngredient ? '輸入' + getIngredientUnit(selectedIngredient) + '數' : '數量'"
-        >
-        <span v-if="selectedIngredient" class="unit">{{ getIngredientUnit(selectedIngredient) }}</span>
+          :placeholder="
+            selectedIngredient ? $t('ingredient.enterAmount', { unit: getIngredientUnit(selectedIngredient) }) : $t('ingredient.amountPlaceholder')
+          "
+        />
+        <span v-if="selectedIngredient" class="unit">{{
+          getIngredientUnit(selectedIngredient)
+        }}</span>
       </div>
 
-      <button 
-        v-if="props.showDelete"
-        type="button" 
-        class="remove-btn"
-        @click="emit('remove')"
-      >
+      <button v-if="props.showDelete" type="button" class="remove-btn" @click="emit('remove')">
         ✕
       </button>
     </div>
     <div v-if="selectedIngredient && amount > 0" class="subtotal">
-      小計: ${{ subtotalCost.toFixed(2) }}
+      {{ $t('ingredient.subtotal') }}: ${{ subtotalCost.toFixed(2) }}
     </div>
   </div>
 </template>
@@ -218,4 +217,4 @@ input:focus {
   margin-top: 0.25rem;
   padding-left: 0.25rem;
 }
-</style> 
+</style>

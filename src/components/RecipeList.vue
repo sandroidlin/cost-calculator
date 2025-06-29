@@ -3,9 +3,7 @@ import { ref, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRecipesStore } from '@/stores/recipes'
 import { useIngredientsStore } from '@/stores/ingredients'
-import type { RecipeIngredient, Recipe, IceType, RecipeStatus } from '@/stores/recipes'
-import { ICE_PRICES } from '@/stores/recipes'
-import type { Ingredient } from '@/stores/ingredients'
+import type { Recipe, RecipeStatus } from '@/stores/recipes'
 import RecipeDetailDialog from './RecipeDetailDialog.vue'
 import RecipeForm from './RecipeForm.vue'
 
@@ -24,145 +22,17 @@ const notificationMessage = ref('')
 const selectedStatus = ref<RecipeStatus>('complete')
 
 const filteredRecipes = computed(() => {
-  return recipes.value.filter(recipe => recipe.status === selectedStatus.value)
+  return recipes.value.filter((recipe) => recipe.status === selectedStatus.value)
 })
 
 const recipeCounts = computed(() => ({
-  draft: recipes.value.filter(recipe => recipe.status === 'draft').length,
-  complete: recipes.value.filter(recipe => recipe.status === 'complete').length
+  draft: recipes.value.filter((recipe) => recipe.status === 'draft').length,
+  complete: recipes.value.filter((recipe) => recipe.status === 'complete').length,
 }))
-
-interface IngredientInput {
-  id: number
-  ingredient: null | Ingredient
-  amount: number
-}
-
-const newRecipe = ref({
-  name: '',
-  bartenderName: '',
-  glass: '',
-  ice: 'no冰' as IceType,
-  method: 'shake' as 'shake' | 'double strain shake' | 'stir' | 'blend' | 'Co2' | 'tap',
-  ingredients: [] as RecipeIngredient[],
-  garnishes: [] as RecipeIngredient[],
-  totalCost: 0
-})
-
-const preparationMethods = ['shake', 'double strain shake', 'stir', 'blend', 'Co2', 'tap'] as const
-type PreparationMethod = typeof preparationMethods[number]
-
-const ingredientInputs = ref<IngredientInput[]>([
-  { id: Date.now(), ingredient: null, amount: 0 }
-])
-
-const iceOptions = Object.keys(ICE_PRICES) as IceType[]
-
-const ingredientSearchQuery = ref('')
-const showIngredientDropdown = ref<number | null>(null)
-
-const filteredIngredients = computed(() => {
-  if (!ingredientSearchQuery.value) return ingredients.value
-  const query = ingredientSearchQuery.value.toLowerCase()
-  return ingredients.value.filter(ing => 
-    ing.name.toLowerCase().includes(query)
-  )
-})
-
-const selectIngredient = (inputId: number, ingredient: typeof ingredients.value[0]) => {
-  const input = ingredientInputs.value.find(i => i.id === inputId)
-  if (input) {
-    input.ingredient = ingredient
-  }
-  showIngredientDropdown.value = null
-  ingredientSearchQuery.value = ''
-}
-
-const addNewIngredientInput = () => {
-  ingredientInputs.value.push({
-    id: Date.now(),
-    ingredient: null,
-    amount: 0
-  })
-}
-
-const removeIngredientInput = (id: number) => {
-  ingredientInputs.value = ingredientInputs.value.filter(input => input.id !== id)
-}
-
-const calculateTotalCost = computed(() => {
-  return ingredientInputs.value.reduce((total, input) => {
-    if (!input.ingredient || !input.amount) return total
-    return total + (input.amount * input.ingredient.unitPrice)
-  }, 0)
-})
-
-const getIngredientUnit = (ingredient: Ingredient): string => {
-  return ingredient.type === '單一材料' ? ingredient.unit : ingredient.mainUnit
-}
-
-const addRecipe = () => {
-  if (!newRecipe.value.name || !newRecipe.value.bartenderName) return
-
-  const recipeIngredients: RecipeIngredient[] = ingredientInputs.value
-    .filter(input => input.ingredient && input.amount)
-    .map(input => ({
-      id: input.id,
-      ingredientId: input.ingredient!.id,
-      name: input.ingredient!.name,
-      amount: input.amount,
-      unit: getIngredientUnit(input.ingredient!),
-      unitPrice: input.ingredient!.unitPrice
-    }))
-
-  if (recipeIngredients.length === 0) return
-
-  recipesStore.addRecipe({
-    ...newRecipe.value,
-    ingredients: recipeIngredients,
-    totalCost: calculateTotalCost.value
-  })
-
-  // Show notification
-  notificationMessage.value = `${newRecipe.value.name}已成功加入資料庫`
-  showNotification.value = true
-  setTimeout(() => {
-    showNotification.value = false
-  }, 3000)
-
-  // Close dialog and reset form
-  closeCreateDialog()
-}
 
 const closeCreateDialog = () => {
   showCreateDialog.value = false
-  // Reset form
-  newRecipe.value = {
-    name: '',
-    bartenderName: '',
-    glass: '',
-    ice: 'no冰',
-    method: 'shake',
-    ingredients: [],
-    garnishes: [],
-    totalCost: 0
-  }
-  ingredientInputs.value = [{ id: Date.now(), ingredient: null, amount: 0 }]
 }
-
-const getSearchValue = (input: IngredientInput) => {
-  if (showIngredientDropdown.value === input.id) {
-    return ingredientSearchQuery.value
-  }
-  return input.ingredient?.name || ''
-}
-
-const searchInputValue = computed({
-  get: () => ingredientSearchQuery.value,
-  set: (value: string) => {
-    ingredientSearchQuery.value = value
-  }
-})
 
 const openRecipeDialog = (recipe: Recipe) => {
   if (recipe.status === 'draft') {
@@ -186,9 +56,9 @@ const openEditDialog = (recipe: Recipe) => {
 }
 
 const handleSaveRecipe = (recipe: Recipe) => {
-  if (recipe.id && recipes.value.find(r => r.id === recipe.id)) {
+  if (recipe.id && recipes.value.find((r) => r.id === recipe.id)) {
     // Update existing recipe
-    const index = recipes.value.findIndex(r => r.id === recipe.id)
+    const index = recipes.value.findIndex((r) => r.id === recipe.id)
     if (index !== -1) {
       recipes.value[index] = recipe
       recipesStore.saveRecipes()
@@ -218,41 +88,33 @@ const closeEditDialog = () => {
   showEditDialog.value = false
   selectedRecipe.value = null
 }
-
-// Add this computed property for edit form cost calculation
-const editFormTotalCost = computed(() => {
-  return ingredientInputs.value.reduce((total, input) => {
-    if (!input.ingredient || !input.amount) return total
-    return total + (input.amount * input.ingredient.unitPrice)
-  }, 0)
-})
 </script>
 
 <template>
   <div class="recipe-list">
     <div class="header">
-      <h2>酒譜一覽</h2>
+      <h2>{{ $t('nav.recipesList') }}</h2>
       <button class="add-btn" @click="showCreateDialog = true">
-        <span class="plus-icon">+</span> 新增酒譜 
+        <span class="plus-icon">+</span> {{ $t('recipe.newRecipe') }}
       </button>
     </div>
 
     <div class="tab-container">
       <div class="tabs">
-        <button 
+        <button
           class="tab-btn"
           :class="{ active: selectedStatus === 'complete' }"
           @click="selectedStatus = 'complete'"
         >
-          完成區
+          {{ $t('recipe.completeZone') }}
           <span class="badge">{{ recipeCounts.complete }}</span>
         </button>
-        <button 
+        <button
           class="tab-btn"
           :class="{ active: selectedStatus === 'draft' }"
           @click="selectedStatus = 'draft'"
         >
-          暫存區
+          {{ $t('recipe.draftZone') }}
           <span class="badge">{{ recipeCounts.draft }}</span>
         </button>
       </div>
@@ -260,15 +122,13 @@ const editFormTotalCost = computed(() => {
 
     <div v-if="recipes.length === 0" class="empty-state">
       <p>尚未新增任何酒譜</p>
-      <button class="add-recipe-btn" @click="showCreateDialog = true">
-        立即新增第一個酒譜
-      </button>
+      <button class="add-recipe-btn" @click="showCreateDialog = true">立即新增第一個酒譜</button>
     </div>
-    
+
     <template v-else>
       <div v-if="filteredRecipes.length > 0" class="recipes-grid">
-        <div 
-          v-for="recipe in filteredRecipes" 
+        <div
+          v-for="recipe in filteredRecipes"
           :key="recipe.id"
           class="recipe-card"
           @click="openRecipeDialog(recipe)"
@@ -287,9 +147,7 @@ const editFormTotalCost = computed(() => {
       </div>
       <div v-else class="empty-state">
         <p>此分類中尚無酒譜</p>
-        <button class="add-recipe-btn" @click="showCreateDialog = true">
-          新增酒譜
-        </button>
+        <button class="add-recipe-btn" @click="showCreateDialog = true">新增酒譜</button>
       </div>
     </template>
 
@@ -309,7 +167,7 @@ const editFormTotalCost = computed(() => {
           <h2>新增酒譜</h2>
           <button class="close-btn" @click="closeCreateDialog">✕</button>
         </div>
-        
+
         <RecipeForm
           :ingredients="ingredients"
           mode="create"
@@ -326,7 +184,7 @@ const editFormTotalCost = computed(() => {
           <h2>修改酒譜</h2>
           <button class="close-btn" @click="closeEditDialog">✕</button>
         </div>
-        
+
         <RecipeForm
           :ingredients="ingredients"
           :initial-recipe="selectedRecipe"
@@ -338,11 +196,7 @@ const editFormTotalCost = computed(() => {
     </div>
 
     <!-- Notification -->
-    <div 
-      v-if="showNotification" 
-      class="notification"
-      @click="showNotification = false"
-    >
+    <div v-if="showNotification" class="notification" @click="showNotification = false">
       {{ notificationMessage }}
     </div>
   </div>
@@ -1012,7 +866,7 @@ const editFormTotalCost = computed(() => {
   cursor: pointer;
 }
 
-.radio-label input[type="radio"] {
+.radio-label input[type='radio'] {
   appearance: none;
   width: 1.125rem;
   height: 1.125rem;
@@ -1023,11 +877,11 @@ const editFormTotalCost = computed(() => {
   cursor: pointer;
 }
 
-.radio-label input[type="radio"]:checked {
+.radio-label input[type='radio']:checked {
   border-color: var(--primary-color);
 }
 
-.radio-label input[type="radio"]:checked::after {
+.radio-label input[type='radio']:checked::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -1185,4 +1039,4 @@ const editFormTotalCost = computed(() => {
   background: var(--primary-color);
   color: white;
 }
-</style> 
+</style>

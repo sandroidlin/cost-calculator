@@ -36,23 +36,23 @@ const displayUnit = computed(() => {
         <h2>{{ ingredient.name }}</h2>
         <button class="close-btn" @click="emit('close')">✕</button>
       </div>
-      
+
       <div class="dialog-content">
         <div class="detail-list">
           <div class="detail-item">
-            <span class="label">總量</span>
+            <span class="label">{{ $t('ingredient.totalAmount') }}</span>
             <span>{{ displayAmount }}</span>
           </div>
           <div class="detail-item">
-            <span class="label">價錢</span>
+            <span class="label">{{ $t('ingredient.price') }}</span>
             <span>${{ ingredient.totalPrice }}</span>
           </div>
           <div class="detail-item">
-            <span class="label">分類</span>
+            <span class="label">{{ $t('ingredient.category') }}</span>
             <span>{{ ingredient.category }}</span>
           </div>
           <div class="detail-item">
-            <span class="label">類型</span>
+            <span class="label">{{ $t('ingredient.type') }}</span>
             <span>{{ ingredient.type }}</span>
           </div>
         </div>
@@ -63,18 +63,8 @@ const displayUnit = computed(() => {
           ${{ ingredient.unitPrice.toFixed(2) }}/{{ displayUnit }}
         </div>
         <div class="button-group">
-          <button 
-            class="edit-btn" 
-            @click="emit('edit', ingredient)"
-          >
-            修改內容
-          </button>
-          <button 
-            class="delete-btn" 
-            @click="emit('delete', ingredient.id)"
-          >
-            刪除材料
-          </button>
+          <button class="edit-btn" @click="emit('edit', ingredient)">{{ $t('ingredient.editContent') }}</button>
+          <button class="delete-btn" @click="emit('delete', ingredient.id)">{{ $t('ingredient.deleteIngredient') }}</button>
         </div>
       </div>
     </div>
@@ -214,4 +204,4 @@ const displayUnit = computed(() => {
 .delete-btn:hover {
   background: #fff1ec;
 }
-</style> 
+</style>

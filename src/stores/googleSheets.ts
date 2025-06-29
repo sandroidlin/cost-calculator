@@ -33,6 +33,6 @@ export const useGoogleSheetsStore = defineStore('googleSheets', {
 
     async syncFromSheets() {
       this.error = 'Google Sheets integration temporarily disabled'
-    }
-  }
-}) 
+    },
+  },
+})

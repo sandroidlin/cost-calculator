@@ -4,7 +4,9 @@ import { useIngredientsStore } from '@/stores/ingredients'
 import { useRecipesStore } from '@/stores/recipes'
 import type { Ingredient } from '@/stores/ingredients'
 import type { Recipe } from '@/stores/recipes'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const ingredientsStore = useIngredientsStore()
 const recipesStore = useRecipesStore()
 
@@ -23,7 +25,7 @@ const exportData = () => {
     ingredients: ingredientsStore.ingredients,
     recipes: recipesStore.recipes,
     version: '1.0',
-    exportDate: new Date().toISOString()
+    exportDate: new Date().toISOString(),
   }
 
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
@@ -36,38 +38,39 @@ const exportData = () => {
   document.body.removeChild(a)
   URL.revokeObjectURL(url)
 
-  notificationMessage.value = '資料已成功匯出'
+  notificationMessage.value = t('import.dataExported')
   showNotification.value = true
   setTimeout(() => {
     showNotification.value = false
   }, 3000)
 }
 
-const importData = (event: Event) => {
+const importData = async (event: Event) => {
   const fileInput = event.target as HTMLInputElement
   if (!fileInput.files?.length) return
 
   const file = fileInput.files[0]
   const reader = new FileReader()
 
-  reader.onload = (e) => {
+  reader.onload = async (e) => {
     try {
       const data = JSON.parse(e.target?.result as string) as ExportData
-      
+
       // Validate data structure
-      if (!data.ingredients || !data.recipes || !Array.isArray(data.ingredients) || !Array.isArray(data.recipes)) {
-        throw new Error('無效的資料格式')
+      if (
+        !data.ingredients ||
+        !data.recipes ||
+        !Array.isArray(data.ingredients) ||
+        !Array.isArray(data.recipes)
+      ) {
+        throw new Error(t('import.invalidFormat'))
       }
 
-      // Import data
-      localStorage.setItem('ingredients', JSON.stringify(data.ingredients))
-      localStorage.setItem('recipes', JSON.stringify(data.recipes))
-      
-      // Reload data in stores
-      ingredientsStore.loadSavedIngredients()
-      recipesStore.loadSavedRecipes()
+      // Import data through store methods to handle both storage backends
+      await ingredientsStore.importData(data.ingredients)
+      await recipesStore.importData(data.recipes)
 
-      notificationMessage.value = '資料已成功匯入'
+      notificationMessage.value = t('import.dataImported')
       showNotification.value = true
       setTimeout(() => {
         showNotification.value = false
@@ -76,7 +79,9 @@ const importData = (event: Event) => {
       // Reset file input
       fileInput.value = ''
     } catch (error) {
-      notificationMessage.value = '匯入失敗：無效的資料格式'
+      console.error('Import error:', error)
+      notificationMessage.value =
+        error instanceof Error ? t('import.importFailed', { message: error.message }) : t('import.invalidFormat')
       showNotification.value = true
       setTimeout(() => {
         showNotification.value = false
@@ -91,17 +96,10 @@ const importData = (event: Event) => {
 <template>
   <div class="data-import-export">
     <div class="link-group">
-      <a href="#" class="export-link" @click.prevent="exportData">
-        匯出資料
-      </a>
+      <a href="#" class="export-link" @click.prevent="exportData"> {{ $t('import.exportData') }} </a>
       <label class="import-link">
-        匯入資料
-        <input
-          type="file"
-          accept=".json"
-          @change="importData"
-          class="file-input"
-        >
+        {{ $t('import.importData') }}
+        <input type="file" accept=".json" @change="importData" class="file-input" />
       </label>
     </div>
 
@@ -175,4 +173,4 @@ const importData = (event: Event) => {
     opacity: 1;
   }
 }
-</style> 
+</style>
