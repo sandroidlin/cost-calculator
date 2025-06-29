@@ -48,20 +48,11 @@ const {
   createWorkspace, 
   acceptInvite, 
   migrateDataToWorkspace,
-  refreshWorkspaces,
   initializeFromUrl
 } = workspacesStore
 
 const currentWorkspaceName = computed(() => {
-  const name = currentWorkspace.value?.name || 'Personal Workspace'
-  console.log('🔍 currentWorkspaceName computed:', {
-    currentWorkspace: currentWorkspace.value,
-    currentWorkspaceId: currentWorkspaceId.value,
-    workspacesCount: workspaces.value.length,
-    allWorkspaces: workspaces.value.map(w => ({ id: w.id, name: w.name })),
-    resultName: name
-  })
-  return name
+  return currentWorkspace.value?.name || 'Personal Workspace'
 })
 
 // Workspace actions with router integration
@@ -144,27 +135,11 @@ const handleClickOutside = (event: MouseEvent) => {
   }
 }
 
-// Watch for workspace changes in App.vue
-watch(() => workspaces.value, (newWorkspaces) => {
-  console.log('🔍 App.vue - workspaces changed:', {
-    count: newWorkspaces.length,
-    names: newWorkspaces.map(w => w.name)
-  })
-}, { deep: true })
-
-watch(() => currentWorkspaceId.value, (newId) => {
-  console.log('🔍 App.vue - currentWorkspaceId changed:', newId)
-})
-
-watch(() => currentWorkspace.value, (newWorkspace) => {
-  console.log('🔍 App.vue - currentWorkspace changed:', newWorkspace)
-})
 
 // Watch for URL workspace changes and sync with store
 watch(() => route.query.workspace, async (workspaceId) => {
   const urlWorkspaceId = workspaceId as string | undefined
   if (urlWorkspaceId !== currentWorkspaceId.value) {
-    console.log('🔄 URL workspace changed:', urlWorkspaceId)
     if (authStore.isAuthenticated) {
       await initializeFromUrl(urlWorkspaceId)
     }
@@ -183,7 +158,6 @@ watch(() => authStore.isAuthenticated, async (isAuth) => {
 
 onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
-  console.log('🔧 App.vue mounted, initializing workspace...')
   
   // Initialize workspace from URL first, then fallback to stored
   const urlWorkspaceId = route.query.workspace as string | undefined
@@ -192,8 +166,6 @@ onMounted(async () => {
   } else {
     await workspacesStore.initializeWorkspace()
   }
-  
-  console.log('🔧 App.vue workspace initialization complete')
 })
 
 onUnmounted(() => {
@@ -258,9 +230,6 @@ onUnmounted(() => {
                     @click="showInviteDialog = true"
                   >
                     📧 Invite Members
-                  </button>
-                  <button class="workspace-action-btn debug-btn" @click="refreshWorkspaces">
-                    🔄 Debug Refresh
                   </button>
                 </div>
               </div>
@@ -834,13 +803,6 @@ nav {
 
 .workspace-action-btn:last-child {
   margin-bottom: 0;
-}
-
-.workspace-action-btn.debug-btn {
-  background: #f0f0f0;
-  color: #666;
-  font-size: 0.75rem;
-  opacity: 0.7;
 }
 
 /* Dialog Styles */

@@ -94,27 +94,17 @@ export const useRecipesStore = defineStore('recipes', () => {
     }))
   )
 
-  console.log('🍸 Recipe query setup complete, current state:', {
-    loading: queryLoading.value,
-    error: queryError.value,
-    data: instantData.value,
-    authenticated: authStore.isAuthenticated
-  })
 
   // Watch for InstantDB data changes
-  watch(() => instantData.value, (newData) => {
-    console.log('🍸 Recipe InstantDB data changed:', newData)
-    if (authStore.isAuthenticated && newData) {
-      console.log('🔄 Recipe data received, triggering sync')
+  watch(() => instantData.value, () => {
+    if (authStore.isAuthenticated && instantData.value) {
       syncFromInstant()
     }
   }, { deep: true })
 
   // Sync InstantDB data to local state
   const syncFromInstant = () => {
-    console.log('🍸 Recipe syncFromInstant called, instantData:', instantData.value)
     if (instantData.value?.recipes) {
-      console.log('📥 Found recipes data:', instantData.value.recipes.length, 'items')
       recipes.value = instantData.value.recipes.map((item: InstantDBRecipe) => {
         const ingredients: RecipeIngredient[] = []
         const garnishes: RecipeIngredient[] = []
@@ -151,9 +141,6 @@ export const useRecipesStore = defineStore('recipes', () => {
           status: item.status as RecipeStatus
         }
       })
-      console.log('✅ Synced recipes to local state:', recipes.value.length, 'items')
-    } else {
-      console.log('❌ No recipes data found in instantData')
     }
   }
 
