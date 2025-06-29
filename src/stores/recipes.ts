@@ -72,23 +72,23 @@ export const useRecipesStore = defineStore('recipes', () => {
   const migrationData = ref<Recipe[]>([])
 
   // Build query filter based on current workspace context
-  const buildQueryFilter = () => {
+  const queryFilter = computed(() => {
     if (!authStore.user?.id) return {}
     
     if (workspacesStore.isWorkspaceMode && workspacesStore.currentWorkspaceId) {
       // Workspace mode: show workspace recipes
       return { where: { workspaceId: workspacesStore.currentWorkspaceId } }
     } else {
-      // Personal mode: show user's personal recipes (no workspaceId)
-      return { where: { $user: authStore.user.id, workspaceId: null } }
+      // Personal mode: show user's personal recipes (user-owned, regardless of workspaceId)
+      return { where: { $user: authStore.user.id } }
     }
-  }
+  })
 
   // Query recipes from InstantDB - direct reactive approach
   const { isLoading: queryLoading, error: queryError, data: instantData } = db.useQuery(
     computed(() => ({
       recipes: {
-        $: buildQueryFilter(),
+        $: queryFilter.value,
         recipeIngredients: {}
       }
     }))

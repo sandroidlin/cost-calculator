@@ -1,20 +1,156 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useIngredientsStore } from '@/stores/ingredients'
 import { useRecipesStore } from '@/stores/recipes'
+import { useWorkspacesStore } from '@/stores/workspaces'
 import Footer from './components/Footer.vue'
 import AuthLogin from './components/AuthLogin.vue'
 import MigrationModal from './components/MigrationModal.vue'
 import ProgressToast from './components/ProgressToast.vue'
+import WorkspaceInviteDialog from './components/WorkspaceInviteDialog.vue'
 import { useImportProgress } from '@/composables/useImportProgress'
 
 const authStore = useAuthStore()
 const ingredientsStore = useIngredientsStore()
 const recipesStore = useRecipesStore()
+const workspacesStore = useWorkspacesStore()
+
+// Dialog states
 const showAuthDialog = ref(false)
+const showWorkspaceDropdown = ref(false)
+const showCreateDialog = ref(false)
+const showJoinDialog = ref(false)
+const showInviteDialog = ref(false)
+
+// Form data
+const newWorkspace = ref({
+  name: '',
+  description: ''
+})
+const migratePersonalData = ref(false)
+const inviteToken = ref('')
+
 const { progressState } = useImportProgress()
+
+// Don't destructure reactive properties - use store directly for reactivity
+const workspaces = computed(() => workspacesStore.workspaces)
+const currentWorkspace = computed(() => workspacesStore.currentWorkspace)
+const currentWorkspaceId = computed(() => workspacesStore.currentWorkspaceId)
+
+// Actions can be destructured safely
+const { 
+  switchToWorkspace: switchWorkspace, 
+  createWorkspace, 
+  acceptInvite, 
+  migrateDataToWorkspace,
+  refreshWorkspaces 
+} = workspacesStore
+
+const currentWorkspaceName = computed(() => {
+  const name = currentWorkspace.value?.name || 'Personal Workspace'
+  console.log('🔍 currentWorkspaceName computed:', {
+    currentWorkspace: currentWorkspace.value,
+    currentWorkspaceId: currentWorkspaceId.value,
+    workspacesCount: workspaces.value.length,
+    allWorkspaces: workspaces.value.map(w => ({ id: w.id, name: w.name })),
+    resultName: name
+  })
+  return name
+})
+
+// Workspace actions
+const switchToPersonal = () => {
+  switchWorkspace(null)
+  showWorkspaceDropdown.value = false
+}
+
+const switchToWorkspace = (workspaceId: string) => {
+  switchWorkspace(workspaceId)
+  showWorkspaceDropdown.value = false
+}
+
+const handleCreateWorkspace = async () => {
+  try {
+    const workspace = await createWorkspace(
+      newWorkspace.value.name.trim(),
+      newWorkspace.value.description.trim()
+    )
+
+    if (migratePersonalData.value && workspace?.id) {
+      await migrateDataToWorkspace(workspace.id)
+    }
+
+    closeCreateDialog()
+    
+    if (workspace?.id) {
+      switchWorkspace(workspace.id)
+    }
+  } catch (err) {
+    console.error('Failed to create workspace:', err)
+  }
+}
+
+const handleAcceptInvite = async () => {
+  try {
+    const workspace = await acceptInvite(inviteToken.value.trim())
+    closeJoinDialog()
+    
+    if (workspace?.id) {
+      switchWorkspace(workspace.id)
+    }
+  } catch (err) {
+    console.error('Failed to accept invitation:', err)
+  }
+}
+
+// Dialog close handlers
+const closeCreateDialog = () => {
+  showCreateDialog.value = false
+  newWorkspace.value = { name: '', description: '' }
+  migratePersonalData.value = false
+}
+
+const closeJoinDialog = () => {
+  showJoinDialog.value = false
+  inviteToken.value = ''
+}
+
+// Click outside handler for dropdown
+const handleClickOutside = (event: MouseEvent) => {
+  const target = event.target as Element
+  if (!target.closest('.workspace-dropdown')) {
+    showWorkspaceDropdown.value = false
+  }
+}
+
+// Watch for workspace changes in App.vue
+watch(() => workspaces.value, (newWorkspaces) => {
+  console.log('🔍 App.vue - workspaces changed:', {
+    count: newWorkspaces.length,
+    names: newWorkspaces.map(w => w.name)
+  })
+}, { deep: true })
+
+watch(() => currentWorkspaceId.value, (newId) => {
+  console.log('🔍 App.vue - currentWorkspaceId changed:', newId)
+})
+
+watch(() => currentWorkspace.value, (newWorkspace) => {
+  console.log('🔍 App.vue - currentWorkspace changed:', newWorkspace)
+})
+
+onMounted(async () => {
+  document.addEventListener('click', handleClickOutside)
+  console.log('🔧 App.vue mounted, initializing workspace...')
+  await workspacesStore.initializeWorkspace()
+  console.log('🔧 App.vue workspace initialization complete')
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <template>
@@ -26,6 +162,61 @@ const { progressState } = useImportProgress()
           <div class="nav-links">
             <RouterLink to="/" class="nav-link">酒譜一覽</RouterLink>
             <RouterLink to="/ingredients" class="nav-link">材料一覽</RouterLink>
+            
+            <!-- Workspace Dropdown - only show when authenticated -->
+            <div v-if="authStore.isAuthenticated" class="workspace-dropdown">
+              <button class="workspace-trigger" @click="showWorkspaceDropdown = !showWorkspaceDropdown">
+                <span class="workspace-name">
+                  {{ currentWorkspaceName }}
+                </span>
+                <span class="dropdown-arrow">▼</span>
+              </button>
+              
+              <div v-if="showWorkspaceDropdown" class="workspace-menu">
+                <div class="workspace-section">
+                  <div class="workspace-section-title">Workspaces</div>
+                  
+                  <div 
+                    class="workspace-option"
+                    :class="{ active: !currentWorkspaceId }"
+                    @click="switchToPersonal"
+                  >
+                    <span class="workspace-option-name">Personal Workspace</span>
+                    <span class="workspace-option-role">Owner</span>
+                  </div>
+
+                  <div 
+                    v-for="workspace in workspaces" 
+                    :key="workspace.id"
+                    class="workspace-option"
+                    :class="{ active: currentWorkspaceId === workspace.id }"
+                    @click="switchToWorkspace(workspace.id)"
+                  >
+                    <span class="workspace-option-name">{{ workspace.name }}</span>
+                    <span class="workspace-option-role">Member</span>
+                  </div>
+                </div>
+
+                <div class="workspace-actions">
+                  <button class="workspace-action-btn" @click="showCreateDialog = true">
+                    ➕ Create Workspace
+                  </button>
+                  <button class="workspace-action-btn" @click="showJoinDialog = true">
+                    🔗 Join Workspace
+                  </button>
+                  <button 
+                    v-if="currentWorkspaceId" 
+                    class="workspace-action-btn" 
+                    @click="showInviteDialog = true"
+                  >
+                    📧 Invite Members
+                  </button>
+                  <button class="workspace-action-btn debug-btn" @click="refreshWorkspaces">
+                    🔄 Debug Refresh
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
           <div v-if="authStore.isAuthenticated" class="user-info">
             <span class="user-email">{{ authStore.user?.email }}</span>
@@ -57,6 +248,7 @@ const { progressState } = useImportProgress()
             <AuthLogin />
           </div>
         </div>
+
         
         <RouterView />
       </div>
@@ -85,6 +277,119 @@ const { progressState } = useImportProgress()
       :title="progressState.title"
       :percentage="progressState.percentage"
       :subtitle="progressState.subtitle"
+    />
+
+    <!-- Workspace Create Dialog -->
+    <div v-if="showCreateDialog" class="dialog-overlay" @click="closeCreateDialog">
+      <div class="dialog" @click.stop>
+        <div class="dialog-header">
+          <h3>Create New Workspace</h3>
+          <button class="btn-icon" @click="closeCreateDialog">×</button>
+        </div>
+        
+        <form @submit.prevent="handleCreateWorkspace" class="dialog-content">
+          <div class="form-group">
+            <label for="workspace-name">Workspace Name *</label>
+            <input
+              id="workspace-name"
+              v-model="newWorkspace.name"
+              type="text"
+              required
+              placeholder="Enter workspace name"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="workspace-description">Description</label>
+            <textarea
+              id="workspace-description"
+              v-model="newWorkspace.description"
+              placeholder="Optional workspace description"
+              rows="3"
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>
+              <input 
+                type="checkbox" 
+                v-model="migratePersonalData"
+              />
+              Transfer my personal data to this workspace
+            </label>
+            <p class="form-help">
+              This will move your existing ingredients and recipes to the new workspace
+            </p>
+          </div>
+
+          <div class="dialog-actions">
+            <button 
+              type="button" 
+              class="btn-secondary" 
+              @click="closeCreateDialog"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              class="btn-primary"
+              :disabled="!newWorkspace.name.trim()"
+            >
+              Create Workspace
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Workspace Join Dialog -->
+    <div v-if="showJoinDialog" class="dialog-overlay" @click="closeJoinDialog">
+      <div class="dialog" @click.stop>
+        <div class="dialog-header">
+          <h3>Join Workspace</h3>
+          <button class="btn-icon" @click="closeJoinDialog">×</button>
+        </div>
+        
+        <form @submit.prevent="handleAcceptInvite" class="dialog-content">
+          <div class="form-group">
+            <label for="invite-token">Invitation Token *</label>
+            <input
+              id="invite-token"
+              v-model="inviteToken"
+              type="text"
+              required
+              placeholder="Enter invitation token"
+            />
+            <p class="form-help">
+              Ask a workspace member for an invitation token
+            </p>
+          </div>
+
+          <div class="dialog-actions">
+            <button 
+              type="button" 
+              class="btn-secondary" 
+              @click="closeJoinDialog"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              class="btn-primary"
+              :disabled="!inviteToken.trim()"
+            >
+              Join Workspace
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Workspace Invite Dialog -->
+    <WorkspaceInviteDialog
+      :is-open="showInviteDialog"
+      :workspace-id="currentWorkspaceId"
+      @close="showInviteDialog = false"
     />
 
     <Footer />
@@ -362,6 +667,274 @@ nav {
     padding-left: 40px;
     padding-right: 40px;
   }
+}
+
+/* Workspace Dropdown Styles */
+.workspace-dropdown {
+  position: relative;
+}
+
+.workspace-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--text-color);
+  transition: all 0.2s;
+}
+
+.workspace-trigger:hover {
+  background: var(--background-color);
+  border-color: var(--primary-color);
+}
+
+.workspace-name {
+  font-weight: 500;
+}
+
+.dropdown-arrow {
+  font-size: 0.7rem;
+  transition: transform 0.2s;
+}
+
+.workspace-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 200;
+  min-width: 280px;
+  margin-top: 0.25rem;
+}
+
+.workspace-section {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.workspace-section-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.workspace-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.workspace-option:hover {
+  background: #f8f9fa;
+}
+
+.workspace-option.active {
+  background: var(--primary-color);
+  color: white;
+}
+
+.workspace-option.active .workspace-option-role {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.workspace-option-name {
+  font-weight: 500;
+}
+
+.workspace-option-role {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: #f1f3f4;
+  padding: 0.125rem 0.5rem;
+  border-radius: 12px;
+}
+
+.workspace-actions {
+  padding: 0.75rem;
+}
+
+.workspace-action-btn {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0.75rem;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: var(--text-color);
+  transition: background-color 0.2s;
+  margin-bottom: 0.25rem;
+}
+
+.workspace-action-btn:hover {
+  background: #f8f9fa;
+}
+
+.workspace-action-btn:last-child {
+  margin-bottom: 0;
+}
+
+.workspace-action-btn.debug-btn {
+  background: #f0f0f0;
+  color: #666;
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+/* Dialog Styles */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.dialog {
+  background: white;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.dialog-header h3 {
+  margin: 0;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  color: var(--text-secondary);
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.btn-icon:hover {
+  background: #f5f5f5;
+}
+
+.dialog-content {
+  padding: 1rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.form-group input[type="checkbox"] {
+  width: auto;
+  margin-right: 0.5rem;
+}
+
+.form-help {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.btn-primary {
+  background: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #e55a2e;
+}
+
+.btn-secondary {
+  background: #f8f9fa;
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #e9ecef;
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Reset styles */

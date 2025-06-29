@@ -83,23 +83,23 @@ export const useIngredientsStore = defineStore('ingredients', () => {
   const migrationData = ref<Ingredient[]>([])
 
   // Build query filter based on current workspace context
-  const buildQueryFilter = () => {
+  const queryFilter = computed(() => {
     if (!authStore.user?.id) return {}
     
     if (workspacesStore.isWorkspaceMode && workspacesStore.currentWorkspaceId) {
       // Workspace mode: show workspace ingredients
       return { where: { workspaceId: workspacesStore.currentWorkspaceId } }
     } else {
-      // Personal mode: show user's personal ingredients (no workspaceId)
-      return { where: { $user: authStore.user.id, workspaceId: null } }
+      // Personal mode: show user's personal ingredients (user-owned, regardless of workspaceId)
+      return { where: { $user: authStore.user.id } }
     }
-  }
+  })
 
   // Query ingredients from InstantDB - direct reactive approach
   const { isLoading: queryLoading, error: queryError, data: instantData } = db.useQuery(
     computed(() => ({
       ingredients: {
-        $: buildQueryFilter(),
+        $: queryFilter.value,
         compoundIngredients: {}
       }
     }))
