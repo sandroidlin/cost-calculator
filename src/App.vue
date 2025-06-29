@@ -23,11 +23,12 @@ import {
   PhWarning,
   PhX,
   PhWifiSlash,
+  PhGlobe,
 } from '@phosphor-icons/vue'
 
 const route = useRoute()
 const router = useRouter()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const authStore = useAuthStore()
 const ingredientsStore = useIngredientsStore()
@@ -37,6 +38,7 @@ const workspacesStore = useWorkspacesStore()
 // Dialog states
 const showAuthDialog = ref(false)
 const showWorkspaceDropdown = ref(false)
+const showUserDropdown = ref(false)
 const showCreateDialog = ref(false)
 const showJoinDialog = ref(false)
 const showInviteDialog = ref(false)
@@ -178,11 +180,30 @@ const closeJoinDialog = () => {
   inviteToken.value = ''
 }
 
+// User dropdown functions
+const switchLanguage = () => {
+  locale.value = locale.value === 'zh' ? 'en' : 'zh'
+  localStorage.setItem('preferred-language', locale.value)
+  showUserDropdown.value = false
+}
+
+const handleSignOut = async () => {
+  try {
+    await authStore.signOut()
+    showUserDropdown.value = false
+  } catch (err) {
+    console.error('Failed to sign out:', err)
+  }
+}
+
 // Click outside handler for dropdown
 const handleClickOutside = (event: MouseEvent) => {
   const target = event.target as Element
   if (!target.closest('.workspace-dropdown')) {
     showWorkspaceDropdown.value = false
+  }
+  if (!target.closest('.user-dropdown')) {
+    showUserDropdown.value = false
   }
 }
 
@@ -249,9 +270,6 @@ onUnmounted(() => {
 
         <!-- User Section -->
         <div class="user-section">
-          <!-- Language Switcher -->
-          <LanguageSwitcher />
-
           <!-- Workspace Dropdown - only show when authenticated -->
           <div v-if="authStore.isAuthenticated" class="workspace-dropdown">
             <button
@@ -320,14 +338,38 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <!-- User Account Section -->
-          <div v-if="authStore.isAuthenticated" class="user-account">
-            <span class="user-email">{{ authStore.user?.email }}</span>
-            <button @click="authStore.signOut()" class="sign-out-btn">
-              <PhSignOut :size="16" />
-              {{ t('nav.signOut') }}
+          <!-- User Account Dropdown -->
+          <div v-if="authStore.isAuthenticated" class="user-dropdown">
+            <button
+              class="user-trigger"
+              @click="showUserDropdown = !showUserDropdown"
+            >
+              <span class="user-email">{{ authStore.user?.email }}</span>
+              <PhCaretDown :size="14" class="dropdown-arrow" />
             </button>
+
+            <div v-if="showUserDropdown" class="user-menu">
+              <div class="user-section-header">
+                <div class="user-info">
+                  <span class="user-email-display">{{ authStore.user?.email }}</span>
+                </div>
+              </div>
+
+              <div class="user-actions">
+                <button class="user-action-btn" @click="switchLanguage">
+                  <PhGlobe :size="16" />
+                  <span>{{ $i18n.locale === 'zh' ? $t('language.switchToEnglish') : $t('language.switchToChinese') }}</span>
+                </button>
+                <button class="user-action-btn sign-out-action" @click="handleSignOut">
+                  <PhSignOut :size="16" />
+                  {{ t('nav.signOut') }}
+                </button>
+              </div>
+            </div>
           </div>
+
+          <!-- Language Switcher for non-authenticated users -->
+          <LanguageSwitcher v-if="!authStore.isAuthenticated" />
         </div>
       </div>
     </header>
@@ -956,6 +998,107 @@ h1 {
 .workspace-delete-btn:hover {
   background: #f44336 !important;
   color: white !important;
+}
+
+/* User Dropdown Styles */
+.user-dropdown {
+  position: relative;
+}
+
+.user-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--text-color);
+  transition: all 0.2s;
+  max-width: 200px;
+}
+
+.user-trigger:hover {
+  background: var(--background-color);
+  border-color: var(--primary-color);
+}
+
+.user-trigger .user-email {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 200;
+  min-width: 220px;
+  margin-top: 0.25rem;
+}
+
+.user-section-header {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  background: #f8f9fa;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.user-email-display {
+  font-weight: 600;
+  color: var(--text-color);
+  font-size: 0.875rem;
+  word-break: break-all;
+}
+
+.user-actions {
+  padding: 0.75rem;
+}
+
+.user-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0.75rem;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: var(--text-color);
+  transition: background-color 0.2s;
+  margin-bottom: 0.25rem;
+}
+
+.user-action-btn:hover {
+  background: #f8f9fa;
+}
+
+.user-action-btn:last-child {
+  margin-bottom: 0;
+}
+
+.sign-out-action {
+  color: #f44336 !important;
+}
+
+.sign-out-action:hover {
+  background: #ffebee !important;
 }
 
 /* Dialog Styles */
