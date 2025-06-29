@@ -112,7 +112,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
         let category = ing.category
         if (category === '糖') category = '甜'
         if (category === '香料') category = '調味料'
-        
+
         if (ing.type === '複合材料') {
           return {
             id: ing.id,
@@ -163,9 +163,11 @@ export const useIngredientsStore = defineStore('ingredients', () => {
         updatedAt: now
       }
 
+      const ingredientId = crypto.randomUUID()
+
       if (ingredient.type === '單一材料') {
         await db.transact(
-          db.tx.ingredients[ingredient.id.toString()].update({
+          db.tx.ingredients[ingredientId].update({
             ...baseData,
             amount: ingredient.amount,
             unit: ingredient.unit,
@@ -174,7 +176,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
         )
       } else {
         await db.transact([
-          db.tx.ingredients[ingredient.id.toString()].update({
+          db.tx.ingredients[ingredientId].update({
             ...baseData,
             mainUnit: ingredient.mainUnit,
             totalAmount: ingredient.totalAmount,
@@ -182,11 +184,11 @@ export const useIngredientsStore = defineStore('ingredients', () => {
             createdAt: now
           }).link({ $user: authStore.user.id }),
           // Handle compound ingredients separately
-          ...ingredient.ingredients.map(comp => 
-            db.tx.compound_ingredients[`${ingredient.id}-${comp.ingredientId}`].update({
+          ...ingredient.ingredients.map(comp =>
+            db.tx.compound_ingredients[crypto.randomUUID()].update({
               ingredientId: comp.ingredientId,
               amount: comp.amount
-            }).link({ ingredient: ingredient.id.toString() })
+            }).link({ ingredient: ingredientId })
           )
         ])
       }
@@ -256,7 +258,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
       if (ingredient.unit === compoundIngredient.mainUnit) {
         calculatedTotalAmount += amount
       }
-      
+
       // Always add to total price
       totalPrice += ingredient.unitPrice * amount
     })
@@ -281,10 +283,10 @@ export const useIngredientsStore = defineStore('ingredients', () => {
       ...ingredient,
       unitPrice
     }
-    
+
     ingredients.value.push(newIngredient)
     saveIngredients()
-    
+
     // Save to InstantDB if authenticated
     if (authStore.isAuthenticated) {
       saveToInstant(newIngredient)
@@ -296,7 +298,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
       ...ingredient,
       type: '複合材料'
     })
-    
+
     const newIngredient: CompoundIngredient = {
       id: Date.now(),
       type: '複合材料',
@@ -306,10 +308,10 @@ export const useIngredientsStore = defineStore('ingredients', () => {
       unitPrice,
       instructions: ingredient.instructions
     }
-    
+
     ingredients.value.push(newIngredient)
     saveIngredients()
-    
+
     // Save to InstantDB if authenticated
     if (authStore.isAuthenticated) {
       saveToInstant(newIngredient)
@@ -333,7 +335,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
 
     ingredients.value[index] = updatedIngredient
     saveIngredients()
-    
+
     // Save to InstantDB if authenticated
     if (authStore.isAuthenticated) {
       saveToInstant(updatedIngredient)
@@ -343,7 +345,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
   function removeIngredient(id: number) {
     // Check if this ingredient is used in any recipes
     const recipesStore = useRecipesStore()
-    const isUsedInRecipes = recipesStore.recipes.some(recipe => 
+    const isUsedInRecipes = recipesStore.recipes.some(recipe =>
       recipe.ingredients.some(ing => ing.ingredientId === id) ||
       recipe.garnishes.some(ing => ing.ingredientId === id)
     )
@@ -354,7 +356,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
 
     // Check if this ingredient is used in any compound ingredients
     const isUsedInCompounds = ingredients.value.some(ingredient =>
-      ingredient.type === '複合材料' && 
+      ingredient.type === '複合材料' &&
       ingredient.ingredients.some(ing => ing.ingredientId === id)
     )
 
@@ -364,7 +366,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
 
     ingredients.value = ingredients.value.filter(ingredient => ingredient.id !== id)
     saveIngredients()
-    
+
     // Delete from InstantDB if authenticated
     if (authStore.isAuthenticated) {
       db.transact(db.tx.ingredients[id].delete())

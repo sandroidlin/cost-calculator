@@ -11,6 +11,9 @@ importers:
       '@dorilama/instantdb-vue':
         specifier: ^0.7.1
         version: 0.7.1(vue@3.5.17(typescript@5.8.3))
+      '@instantdb/core':
+        specifier: ^0.20.4
+        version: 0.20.4
       firebase:
         specifier: ^11.9.0
         version: 11.9.1
@@ -711,6 +714,9 @@ packages:
 
   '@instantdb/core@0.19.22':
     resolution: {integrity: sha512-jQDjD0RLyAGjsvbK8pNOMzQ57vbjG1elg8Nwm5uAwsrt+IkL6s+dtrciNPeHmyeGJbNfekAjg8KvRBj0IqFT4Q==}
+
+  '@instantdb/core@0.20.4':
+    resolution: {integrity: sha512-oiOiu+HGxURdIhxMftng7vFQ4ZQ/oHBRiakT0Miuy4Vo8eC7AG8WGcz3hnsnuB6mBukdhfUGwfiYksE04n4Wcg==}
 
   '@isaacs/cliui@8.0.2':
     resolution: {integrity: sha512-O8jcjabXaleOG9DQ0+ARXWZBTfnP4WNAqzuiJK7ll44AmxGKv/J2M4TPjxjY3znBCfvBXFzucm1twdyFybFqEA==}
@@ -3243,6 +3249,11 @@ snapshots:
   '@humanwhocodes/retry@0.4.3': {}
 
   '@instantdb/core@0.19.22':
+    dependencies:
+      mutative: 1.2.0
+      uuid: 9.0.1
+
+  '@instantdb/core@0.20.4':
     dependencies:
       mutative: 1.2.0
       uuid: 9.0.1
