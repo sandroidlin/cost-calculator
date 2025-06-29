@@ -4,7 +4,6 @@ import { useRecipesStore } from './recipes'
 import { useAuthStore } from './auth'
 import { db } from '@/utils/instant'
 import { useImportProgress } from '@/composables/useImportProgress'
-import type { Recipe } from './recipes'
 
 export type UnitType = 'ml' | 'g' | 'dash' | '份'
 export type CategoryType = '基酒' | '利口酒' | '裝飾' | '果汁果泥' | '苦精' | '酸' | '甜' | '調味料' | '其他'

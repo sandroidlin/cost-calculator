@@ -157,7 +157,7 @@ export const useRecipesStore = defineStore('recipes', () => {
           updatedAt: now
         }).link({ $user: authStore.user.id }),
         // Save recipe ingredients
-        ...recipe.ingredients.map((ingredient, index) =>
+        ...recipe.ingredients.map((ingredient) =>
           db.tx.recipe_ingredients[crypto.randomUUID()].update({
             ingredientId: ingredient.ingredientId,
             amount: ingredient.amount,
@@ -168,7 +168,7 @@ export const useRecipesStore = defineStore('recipes', () => {
           }).link({ recipe: recipeId })
         ),
         // Save garnishes
-        ...recipe.garnishes.map((garnish, index) =>
+        ...recipe.garnishes.map((garnish) =>
           db.tx.recipe_ingredients[crypto.randomUUID()].update({
             ingredientId: garnish.ingredientId,
             amount: garnish.amount,
@@ -243,7 +243,7 @@ export const useRecipesStore = defineStore('recipes', () => {
   }
 
   // Migration function to cache InstantDB data to localStorage
-  const cacheInstantDataLocally = () => {
+  const _cacheInstantDataLocally = () => {
     if (recipes.value.length > 0) {
       localStorage.setItem('recipes', JSON.stringify(recipes.value))
     }

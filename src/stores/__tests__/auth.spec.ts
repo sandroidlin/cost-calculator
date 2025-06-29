@@ -33,7 +33,7 @@ describe('AuthStore', () => {
 
   it('should handle sendMagicCode', async () => {
     const authStore = useAuthStore()
-    const mockSendMagicCode = vi.fn().mockResolvedValue(undefined)
+    const _mockSendMagicCode = vi.fn().mockResolvedValue(undefined)
     
     // Mock the db auth method
     authStore.sendMagicCode = vi.fn().mockImplementation(async (email) => {
