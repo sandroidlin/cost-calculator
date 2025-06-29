@@ -23,49 +23,47 @@ const handleCodeSubmit = (e: Event) => {
 <template>
   <div class="auth-container">
     <div class="auth-card">
-      <div v-if="authStore.isLoading" class="loading">Loading...</div>
+      <div v-if="authStore.isLoading" class="loading">{{ $t('auth.loading') }}</div>
 
       <div v-else-if="authStore.error" class="error">
         {{ authStore.error }}
-        <button @click="authStore.clearError()" class="retry-btn">Try Again</button>
+        <button @click="authStore.clearError()" class="retry-btn">{{ $t('auth.retry') }}</button>
       </div>
 
       <div v-else-if="authStore.isAuthenticated" class="authenticated">
-        <h2>Welcome, {{ authStore.user?.email }}!</h2>
+        <h2>{{ $t('auth.welcome', { email: authStore.user?.email }) }}</h2>
         <button @click="authStore.signOut()" class="sign-out-btn">{{ $t('nav.signOut') }}</button>
       </div>
 
       <div v-else-if="!authStore.sentEmail" class="email-step">
         <form @submit="handleEmailSubmit">
-          <h2>Let's log you in</h2>
-          <p>Enter your email, and we'll send you a verification code.</p>
+          <h2>{{ $t('auth.loginTitle') }}</h2>
+          <p>{{ $t('auth.loginPrompt') }}</p>
           <input
             type="email"
-            placeholder="Enter your email"
+            :placeholder="$t('auth.emailPlaceholder')"
             required
             autofocus
             class="email-input"
           />
-          <button type="submit" class="submit-btn">Send Code</button>
+          <button type="submit" class="submit-btn">{{ $t('auth.sendCode') }}</button>
         </form>
       </div>
 
       <div v-else class="code-step">
         <form @submit="handleCodeSubmit">
-          <h2>Enter your code</h2>
-          <p>
-            We sent an email to <strong>{{ authStore.sentEmail }}</strong
-            >. Check your email and paste the code you see.
-          </p>
+          <h2>{{ $t('auth.codeTitle') }}</h2>
+          <p v-html="$t('auth.codePrompt', { email: authStore.sentEmail })
+          "></p>
           <input
             ref="inputRef"
             type="text"
-            placeholder="123456..."
+            :placeholder="$t('auth.codePlaceholder')"
             required
             autofocus
             class="code-input"
           />
-          <button type="submit" class="submit-btn">Verify Code</button>
+          <button type="submit" class="submit-btn">{{ $t('auth.verifyCode') }}</button>
         </form>
       </div>
     </div>

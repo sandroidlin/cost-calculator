@@ -21,7 +21,7 @@ if (savedLang && availableLocales.value.includes(savedLang)) {
     <button
       class="language-btn"
       @click="switchLanguage(locale === 'zh' ? 'en' : 'zh')"
-      :title="locale === 'zh' ? 'Switch to English' : '切換至中文'"
+      :title="locale === 'zh' ? $t('language.switchToEnglish') : $t('language.switchToChinese')"
     >
       <PhGlobe :size="18" />
       <span>{{ locale === 'zh' ? 'EN' : '中' }}</span>

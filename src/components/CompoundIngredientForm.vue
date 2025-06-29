@@ -132,21 +132,21 @@ const saveIngredient = () => {
   <div class="dialog-overlay">
     <div class="dialog">
       <div class="dialog-header">
-        <h2>{{ mode === 'create' ? $t('ingredient.newCompoundIngredient') : '編輯複合材料' }}</h2>
+        <h2>{{ mode === 'create' ? $t('ingredient.newCompoundIngredient') : $t('ingredient.editCompoundIngredient') }}</h2>
         <button class="close-btn" @click="emit('cancel')">✕</button>
       </div>
 
       <div class="dialog-content">
         <div class="section">
-          <h3 class="section-title">基本資料</h3>
+          <h3 class="section-title">{{ $t('ingredient.basicInfo') }}</h3>
           <div class="form-section">
             <div class="form-group">
-              <label>名稱</label>
+              <label>{{ $t('ingredient.name') }}</label>
               <input v-model="ingredient.name" type="text" required />
             </div>
 
             <div class="form-group">
-              <label>分類</label>
+              <label>{{ $t('ingredient.category') }}</label>
               <select v-model="ingredient.category">
                 <option v-for="category in categoryOptions" :key="category" :value="category">
                   {{ category }}
@@ -155,7 +155,7 @@ const saveIngredient = () => {
             </div>
 
             <div class="form-group">
-              <label>主要單位</label>
+              <label>{{ $t('ingredient.mainUnit') }}</label>
               <select v-model="ingredient.mainUnit">
                 <option v-for="unit in unitOptions" :key="unit" :value="unit">
                   {{ unit }}
@@ -164,26 +164,26 @@ const saveIngredient = () => {
             </div>
 
             <div class="form-group">
-              <label>總量（若與材料總和不同）</label>
+              <label>{{ $t('ingredient.totalAmountDifferent') }}</label>
               <div class="amount-input">
                 <input
                   v-model.number="overrideTotalAmount"
                   type="number"
                   min="0"
                   step="0.1"
-                  :placeholder="'輸入總' + ingredient.mainUnit + '數'"
+                  :placeholder="$t('ingredient.enterTotalAmount', { unit: ingredient.mainUnit })"
                 />
                 <span class="unit">{{ ingredient.mainUnit }}</span>
               </div>
               <div class="help-text" v-if="calculatedTotalAmount">
-                材料總和: {{ calculatedTotalAmount.toFixed(2) }}{{ ingredient.mainUnit }}
+                {{ $t('ingredient.sumOfIngredients') }}: {{ calculatedTotalAmount.toFixed(2) }}{{ ingredient.mainUnit }}
               </div>
             </div>
           </div>
         </div>
 
         <div class="section">
-          <h3 class="section-title">材料清單</h3>
+          <h3 class="section-title">{{ $t('ingredient.ingredientList') }}</h3>
           <div class="form-section">
             <div class="ingredients-list">
               <div v-for="input in ingredientInputs" :key="input.id" class="ingredient-input">
@@ -197,20 +197,20 @@ const saveIngredient = () => {
                 />
               </div>
               <button type="button" class="add-ingredient-btn" @click="addNewIngredientInput">
-                + 新增其他材料
+                {{ $t('ingredient.addOtherIngredients') }}
               </button>
             </div>
           </div>
         </div>
 
         <div class="section">
-          <h3 class="section-title">作法</h3>
+          <h3 class="section-title">{{ $t('ingredient.instructions') }}</h3>
           <div class="form-section">
             <div class="form-group">
               <textarea
                 v-model="ingredient.instructions"
                 rows="4"
-                placeholder="請輸入製作步驟..."
+                :placeholder="$t('ingredient.enterInstructions')"
               ></textarea>
             </div>
           </div>
@@ -220,18 +220,18 @@ const saveIngredient = () => {
       <div class="dialog-footer">
         <div class="cost-info">
           <div class="info-item">
-            <span class="label">總量</span>
+            <span class="label">{{ $t('ingredient.totalAmount') }}</span>
             <span class="highlight-value"
               >{{ totalAmount.toFixed(2) }}{{ ingredient.mainUnit }}</span
             >
           </div>
           <div class="info-item">
-            <span class="label">平均成本</span>
+            <span class="label">{{ $t('ingredient.averageCost') }}</span>
             <span class="value">${{ unitPrice.toFixed(2) }}/{{ ingredient.mainUnit }}</span>
           </div>
         </div>
         <div class="button-group">
-          <button class="cancel-btn" @click="emit('cancel')">取消</button>
+          <button class="cancel-btn" @click="emit('cancel')">{{ $t('common.cancel') }}</button>
           <button
             class="save-btn"
             @click="saveIngredient"
@@ -240,7 +240,7 @@ const saveIngredient = () => {
               !ingredientInputs.some((input) => input.ingredient && input.amount)
             "
           >
-            {{ mode === 'create' ? $t('ingredient.newCompoundIngredient') : '儲存變更' }}
+            {{ mode === 'create' ? $t('ingredient.newCompoundIngredient') : $t('ingredient.saveChanges') }}
           </button>
         </div>
       </div>

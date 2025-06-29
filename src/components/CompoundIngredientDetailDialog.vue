@@ -41,13 +41,13 @@ const ingredientDetails = computed(() => {
       <div class="dialog-header">
         <div class="header-content">
           <h2>{{ ingredient.name }}</h2>
-          <span class="type-pill">複合材料</span>
+          <span class="type-pill">{{ $t('ingredient.compoundIngredient') }}</span>
         </div>
         <button class="close-btn" @click="emit('close')">✕</button>
       </div>
 
       <div class="dialog-content">
-        <h4 class="section-title">材料清單</h4>
+        <h4 class="section-title">{{ $t('ingredient.ingredientList') }}</h4>
         <div class="ingredients-list">
           <div v-for="item in ingredientDetails" :key="item.name" class="ingredient-row">
             <span class="ingredient-name">{{ item.name }}</span>
@@ -56,25 +56,25 @@ const ingredientDetails = computed(() => {
         </div>
 
         <div v-if="ingredient.instructions" class="section">
-          <h4 class="section-title">作法</h4>
+          <h4 class="section-title">{{ $t('ingredient.instructions') }}</h4>
           <div class="instructions-content">
             {{ ingredient.instructions }}
           </div>
         </div>
 
         <div class="section">
-          <h4 class="section-title">其他資訊</h4>
+          <h4 class="section-title">{{ $t('ingredient.otherInfo') }}</h4>
           <div class="presentation-details">
             <div class="detail-row">
-              <span class="label">分類</span>
+              <span class="label">{{ $t('ingredient.category') }}</span>
               <span class="value">{{ ingredient.category }}</span>
             </div>
             <div class="detail-row">
-              <span class="label">主要單位</span>
+              <span class="label">{{ $t('ingredient.mainUnit') }}</span>
               <span class="value">{{ ingredient.mainUnit }}</span>
             </div>
             <div class="detail-row">
-              <span class="label">成本</span>
+              <span class="label">{{ $t('common.cost') }}</span>
               <span class="value"
                 >${{ ingredient.unitPrice.toFixed(2) }}/{{ ingredient.mainUnit }}</span
               >
@@ -83,8 +83,8 @@ const ingredientDetails = computed(() => {
         </div>
 
         <div class="dialog-actions">
-          <button class="edit-btn" @click="emit('edit', ingredient)">修改材料</button>
-          <button class="delete-btn" @click="emit('delete', ingredient.id)">刪除材料</button>
+          <button class="edit-btn" @click="emit('edit', ingredient)">{{ $t('ingredient.editIngredient') }}</button>
+          <button class="delete-btn" @click="emit('delete', ingredient.id)">{{ $t('ingredient.deleteIngredient') }}</button>
         </div>
       </div>
     </div>

@@ -59,7 +59,7 @@ const subtotalCost = computed(() => {
           v-model="searchQuery"
           @focus="showDropdown = true"
           type="text"
-          placeholder="選擇材料"
+          :placeholder="$t('ingredient.selectIngredient')"
         />
         <div v-if="showDropdown" class="dropdown">
           <div
@@ -82,7 +82,7 @@ const subtotalCost = computed(() => {
           step="1"
           @input="updateAmount($event)"
           :placeholder="
-            selectedIngredient ? '輸入' + getIngredientUnit(selectedIngredient) + '數' : '數量'
+            selectedIngredient ? $t('ingredient.enterAmount', { unit: getIngredientUnit(selectedIngredient) }) : $t('ingredient.amountPlaceholder')
           "
         />
         <span v-if="selectedIngredient" class="unit">{{
@@ -95,7 +95,7 @@ const subtotalCost = computed(() => {
       </button>
     </div>
     <div v-if="selectedIngredient && amount > 0" class="subtotal">
-      小計: ${{ subtotalCost.toFixed(2) }}
+      {{ $t('ingredient.subtotal') }}: ${{ subtotalCost.toFixed(2) }}
     </div>
   </div>
 </template>
