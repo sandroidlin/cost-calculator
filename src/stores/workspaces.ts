@@ -393,6 +393,26 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
     }
   }
 
+  // Initialize workspace from URL (called from App.vue)
+  const initializeFromUrl = async (urlWorkspaceId?: string) => {
+    if (!authStore.isAuthenticated) return
+
+    await loadWorkspaces()
+
+    if (urlWorkspaceId && workspaces.value.some(w => w.id === urlWorkspaceId)) {
+      currentWorkspaceId.value = urlWorkspaceId
+      localStorage.setItem('currentWorkspaceId', urlWorkspaceId)
+      console.log('✅ Restored workspace from URL:', urlWorkspaceId)
+    } else {
+      // Fallback to localStorage
+      const savedWorkspaceId = localStorage.getItem('currentWorkspaceId')
+      if (savedWorkspaceId && workspaces.value.some(w => w.id === savedWorkspaceId)) {
+        currentWorkspaceId.value = savedWorkspaceId
+        console.log('✅ Restored workspace from localStorage:', savedWorkspaceId)
+      }
+    }
+  }
+
   // Migrate user data to workspace
   const migrateDataToWorkspace = async (workspaceId: string) => {
     if (!authStore.user) throw new Error('Must be authenticated')
@@ -474,6 +494,7 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
     migrateDataToWorkspace,
     clearError,
     refreshWorkspaces,
-    loadWorkspaces
+    loadWorkspaces,
+    initializeFromUrl
   }
 })

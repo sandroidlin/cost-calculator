@@ -271,7 +271,7 @@ onMounted(() => {
 }
 
 .dialog {
-  background: var(--color-background);
+  background: white;
   border-radius: 8px;
   max-width: 600px;
   width: 90%;
@@ -285,11 +285,12 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .dialog-header h3 {
   margin: 0;
+  color: var(--text-color);
 }
 
 .btn-icon {
@@ -298,7 +299,13 @@ onMounted(() => {
   font-size: 1.5rem;
   cursor: pointer;
   padding: 0.25rem;
-  color: var(--color-text-soft);
+  color: var(--text-secondary);
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.btn-icon:hover {
+  background: #f5f5f5;
 }
 
 .dialog-content {
@@ -308,7 +315,7 @@ onMounted(() => {
 .invite-form {
   margin-bottom: 2rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .form-group {
@@ -319,15 +326,23 @@ onMounted(() => {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
+  color: var(--text-color);
 }
 
 .form-group input,
 .form-group select {
   width: 100%;
   padding: 0.5rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--primary-color);
 }
 
 .form-actions {
@@ -343,13 +358,15 @@ onMounted(() => {
 .pending-invites h4,
 .current-members h4 {
   margin: 0 0 1rem 0;
-  color: var(--color-heading);
+  color: var(--text-color);
   font-size: 1rem;
 }
 
 .invite-list,
 .member-list {
-  space-y: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .invite-item,
@@ -358,9 +375,9 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  background: var(--color-background-mute);
+  background: #f8f9fa;
 }
 
 .invite-info,
@@ -372,22 +389,23 @@ onMounted(() => {
 .member-email {
   font-weight: 500;
   margin-bottom: 0.25rem;
+  color: var(--text-color);
 }
 
 .invite-details {
   display: flex;
   gap: 1rem;
   font-size: 0.875rem;
-  color: var(--color-text-soft);
+  color: var(--text-secondary);
 }
 
 .invite-role,
 .member-role {
   font-size: 0.75rem;
-  padding: 0.125rem 0.375rem;
-  background: var(--color-background-soft);
-  border-radius: 3px;
-  color: var(--color-text-soft);
+  padding: 0.125rem 0.5rem;
+  background: #f1f3f4;
+  border-radius: 12px;
+  color: var(--text-secondary);
   text-transform: capitalize;
 }
 
@@ -400,40 +418,43 @@ onMounted(() => {
 .btn-primary,
 .btn-copy,
 .btn-danger-small {
-  padding: 0.375rem 0.75rem;
+  padding: 0.5rem 1rem;
   border-radius: 4px;
   border: none;
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   transition: all 0.2s;
+  font-weight: 500;
 }
 
 .btn-primary {
-  background: var(--color-primary);
+  background: var(--primary-color);
   color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-dark);
+  background: #e55a2e;
 }
 
 .btn-copy {
-  background: var(--color-background-soft);
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
+  background: #f8f9fa;
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
 }
 
 .btn-copy:hover {
-  background: var(--color-background-mute);
+  background: #e9ecef;
 }
 
 .btn-danger-small {
-  background: var(--color-error-light);
-  color: var(--color-error);
+  background: #ffebee;
+  color: #d32f2f;
+  font-size: 0.75rem;
+  padding: 0.375rem 0.75rem;
 }
 
 .btn-danger-small:hover:not(:disabled) {
-  background: var(--color-error);
+  background: #f44336;
   color: white;
 }
 
@@ -444,29 +465,31 @@ onMounted(() => {
 }
 
 .success-message {
-  background: var(--color-success-light);
-  color: var(--color-success);
+  background: #e8f5e8;
+  color: #2e7d32;
   padding: 0.75rem;
   border-radius: 4px;
   margin: 1rem;
   word-break: break-all;
+  border: 1px solid #c8e6c9;
 }
 
 .error-message {
-  background: var(--color-error-light);
-  color: var(--color-error);
+  background: #ffebee;
+  color: #d32f2f;
   padding: 0.75rem;
   border-radius: 4px;
   margin: 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border: 1px solid #ffcdd2;
 }
 
 .error-message button {
   background: none;
   border: none;
-  color: var(--color-error);
+  color: #d32f2f;
   cursor: pointer;
   font-size: 1.25rem;
   padding: 0;

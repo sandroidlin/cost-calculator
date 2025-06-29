@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useIngredientsStore } from '@/stores/ingredients'
 import { useRecipesStore } from '@/stores/recipes'
@@ -11,6 +11,9 @@ import MigrationModal from './components/MigrationModal.vue'
 import ProgressToast from './components/ProgressToast.vue'
 import WorkspaceInviteDialog from './components/WorkspaceInviteDialog.vue'
 import { useImportProgress } from '@/composables/useImportProgress'
+
+const route = useRoute()
+const router = useRouter()
 
 const authStore = useAuthStore()
 const ingredientsStore = useIngredientsStore()
@@ -45,7 +48,8 @@ const {
   createWorkspace, 
   acceptInvite, 
   migrateDataToWorkspace,
-  refreshWorkspaces 
+  refreshWorkspaces,
+  initializeFromUrl
 } = workspacesStore
 
 const currentWorkspaceName = computed(() => {
@@ -60,15 +64,24 @@ const currentWorkspaceName = computed(() => {
   return name
 })
 
-// Workspace actions
+// Workspace actions with router integration
 const switchToPersonal = () => {
   switchWorkspace(null)
   showWorkspaceDropdown.value = false
+  
+  // Update URL to remove workspace parameter
+  const currentQuery = { ...route.query }
+  delete currentQuery.workspace
+  router.push({ path: route.path, query: currentQuery }).catch(() => {})
 }
 
 const switchToWorkspace = (workspaceId: string) => {
   switchWorkspace(workspaceId)
   showWorkspaceDropdown.value = false
+  
+  // Update URL to include workspace parameter
+  const currentQuery = { ...route.query, workspace: workspaceId }
+  router.push({ path: route.path, query: currentQuery }).catch(() => {})
 }
 
 const handleCreateWorkspace = async () => {
@@ -86,6 +99,9 @@ const handleCreateWorkspace = async () => {
     
     if (workspace?.id) {
       switchWorkspace(workspace.id)
+      // Update URL to include new workspace
+      const currentQuery = { ...route.query, workspace: workspace.id }
+      router.push({ path: route.path, query: currentQuery }).catch(() => {})
     }
   } catch (err) {
     console.error('Failed to create workspace:', err)
@@ -99,6 +115,9 @@ const handleAcceptInvite = async () => {
     
     if (workspace?.id) {
       switchWorkspace(workspace.id)
+      // Update URL to include joined workspace
+      const currentQuery = { ...route.query, workspace: workspace.id }
+      router.push({ path: route.path, query: currentQuery }).catch(() => {})
     }
   } catch (err) {
     console.error('Failed to accept invitation:', err)
@@ -141,10 +160,39 @@ watch(() => currentWorkspace.value, (newWorkspace) => {
   console.log('🔍 App.vue - currentWorkspace changed:', newWorkspace)
 })
 
+// Watch for URL workspace changes and sync with store
+watch(() => route.query.workspace, async (workspaceId) => {
+  const urlWorkspaceId = workspaceId as string | undefined
+  if (urlWorkspaceId !== currentWorkspaceId.value) {
+    console.log('🔄 URL workspace changed:', urlWorkspaceId)
+    if (authStore.isAuthenticated) {
+      await initializeFromUrl(urlWorkspaceId)
+    }
+  }
+}, { immediate: false })
+
+// Watch for authentication changes and clean up URL
+watch(() => authStore.isAuthenticated, async (isAuth) => {
+  if (!isAuth && route.query.workspace) {
+    // Clean up URL workspace parameter when not authenticated
+    const currentQuery = { ...route.query }
+    delete currentQuery.workspace
+    router.replace({ path: route.path, query: currentQuery }).catch(() => {})
+  }
+})
+
 onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
   console.log('🔧 App.vue mounted, initializing workspace...')
-  await workspacesStore.initializeWorkspace()
+  
+  // Initialize workspace from URL first, then fallback to stored
+  const urlWorkspaceId = route.query.workspace as string | undefined
+  if (authStore.isAuthenticated) {
+    await initializeFromUrl(urlWorkspaceId)
+  } else {
+    await workspacesStore.initializeWorkspace()
+  }
+  
   console.log('🔧 App.vue workspace initialization complete')
 })
 
@@ -747,10 +795,6 @@ nav {
 .workspace-option.active {
   background: var(--primary-color);
   color: white;
-}
-
-.workspace-option.active .workspace-option-role {
-  color: rgba(255, 255, 255, 0.8);
 }
 
 .workspace-option-name {
