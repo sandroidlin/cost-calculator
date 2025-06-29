@@ -93,9 +93,9 @@ const closeEditDialog = () => {
 <template>
   <div class="recipe-list">
     <div class="header">
-      <h2>酒譜一覽</h2>
+      <h2>{{ $t('nav.recipesList') }}</h2>
       <button class="add-btn" @click="showCreateDialog = true">
-        <span class="plus-icon">+</span> 新增酒譜
+        <span class="plus-icon">+</span> {{ $t('recipe.newRecipe') }}
       </button>
     </div>
 

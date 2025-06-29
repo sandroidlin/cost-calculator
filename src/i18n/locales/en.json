@@ -5,6 +5,7 @@
   },
   "nav": {
     "recipes": "Recipes",
+    "recipesList": "Recipe List",
     "ingredients": "Ingredients",
     "personalWorkspace": "Personal Workspace",
     "signOut": "Sign Out"
@@ -32,8 +33,7 @@
     "collaborative": "Collaborative workspace",
     "createNew": "Create New Workspace",
     "creating": "Creating...",
-    "joining": "Joining..."
-  ,
+    "joining": "Joining...",
     "workspaces": "Workspaces",
     "personalWorkspace": "Personal Workspace",
     "owner": "Owner",
@@ -68,7 +68,9 @@
   },
   "recipe": {
     "recipes": "Recipes",
+    "recipesList": "Recipe List",
     "newRecipe": "New Recipe",
+    "addRecipe": "Add Recipe",
     "recipeName": "Recipe Name",
     "enterRecipeName": "Enter recipe name",
     "instructions": "Instructions",
@@ -97,6 +99,8 @@
   "ingredient": {
     "ingredients": "Ingredients",
     "newIngredient": "New Ingredient",
+    "addCompoundIngredient": "Add Compound Ingredient",
+    "addSingleIngredient": "Add Single Ingredient",
     "ingredientName": "Ingredient Name",
     "enterIngredientName": "Enter ingredient name",
     "cost": "Cost",
@@ -124,8 +128,7 @@
     "searchIngredients": "Search ingredients..."
   },
   "common": {
-    "aboutPage": "This is an about page"
-  ,
+    "aboutPage": "This is an about page",
     "save": "Save",
     "cancel": "Cancel",
     "edit": "Edit",

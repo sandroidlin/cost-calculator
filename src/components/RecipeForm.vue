@@ -198,7 +198,7 @@ const saveRecipe = (status: RecipeStatus = 'draft') => {
   <div class="dialog-overlay">
     <div class="dialog">
       <div class="dialog-header">
-        <h2>{{ mode === 'create' ? '新增酒譜' : '修改酒譜' }}</h2>
+        <h2>{{ mode === 'create' ? $t('recipe.newRecipe') : $t('common.edit') + $t('recipe.newRecipe') }}</h2>
         <button class="close-btn" @click="emit('cancel')">✕</button>
       </div>
       <div class="dialog-content">

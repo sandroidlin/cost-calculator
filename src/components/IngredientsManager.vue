@@ -238,10 +238,10 @@ const handleEditIngredient = (ingredient: Ingredient) => {
       <h2>{{ $t('nav.ingredients') }}</h2>
       <div class="button-group">
         <button class="add-btn" @click="showCompoundIngredientForm = true">
-          <span class="plus-icon">+</span> 新增複合材料
+          <span class="plus-icon">+</span> {{ $t('ingredient.addCompoundIngredient') }}
         </button>
         <button class="add-btn" @click="showCreateDialog = true">
-          <span class="plus-icon">+</span> 新增單一材料
+          <span class="plus-icon">+</span> {{ $t('ingredient.addSingleIngredient') }}
         </button>
       </div>
     </div>

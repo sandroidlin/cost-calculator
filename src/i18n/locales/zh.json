@@ -5,6 +5,7 @@
   },
   "nav": {
     "recipes": "酒譜一覽",
+    "recipesList": "酒譜一覽",
     "ingredients": "材料一覽",
     "personalWorkspace": "個人工作區",
     "signOut": "登出"
@@ -32,8 +33,7 @@
     "collaborative": "協作工作區",
     "createNew": "建立新工作區",
     "creating": "建立中...",
-    "joining": "加入中..."
-  ,
+    "joining": "加入中...",
     "workspaces": "工作區",
     "personalWorkspace": "個人工作區",
     "owner": "擁有者",
@@ -55,7 +55,7 @@
     "invitationTokenHelp": "請向工作區成員索取邀請碼",
     "join": "加入工作區",
     "deleteConfirmTitle": "刪除工作區",
-    "deleteConfirmMessage": "您確定要刪除「{name}」嗎？",
+    "deleteConfirmMessage": "您確定要刪除\"{name}\"嗎？",
     "deleteConfirmDetails": "所有工作區資料包括酒譜、材料和成員存取權限將被永久移除。",
     "actionCannotBeUndone": "此操作無法復原",
     "deleting": "刪除中...",
@@ -68,7 +68,9 @@
   },
   "recipe": {
     "recipes": "酒譜",
+    "recipesList": "酒譜一覽",
     "newRecipe": "新增酒譜",
+    "addRecipe": "新增酒譜",
     "recipeName": "酒譜名稱",
     "enterRecipeName": "輸入酒譜名稱",
     "instructions": "製作方法",
@@ -85,7 +87,7 @@
     "edit": "編輯",
     "delete": "刪除",
     "confirmDelete": "確認刪除",
-    "deleteRecipeConfirm": "您確定要刪除這個酒譜嗎？",
+    "deleteRecipeConfirm": "您確定要刪除此酒譜嗎？",
     "actions": "操作",
     "ingredients": "材料",
     "noRecipes": "尚未建立任何酒譜",
@@ -97,6 +99,8 @@
   "ingredient": {
     "ingredients": "材料",
     "newIngredient": "新增材料",
+    "addCompoundIngredient": "新增複合材料",
+    "addSingleIngredient": "新增單一材料",
     "ingredientName": "材料名稱",
     "enterIngredientName": "輸入材料名稱",
     "cost": "成本",
@@ -118,14 +122,13 @@
     "edit": "編輯",
     "delete": "刪除",
     "confirmDelete": "確認刪除",
-    "deleteIngredientConfirm": "您確定要刪除這個材料嗎？",
+    "deleteIngredientConfirm": "您確定要刪除此材料嗎？",
     "noIngredients": "尚未建立任何材料",
     "createFirstIngredient": "建立您的第一個材料",
     "searchIngredients": "搜尋材料..."
   },
   "common": {
-    "aboutPage": "這是一個關於頁面"
-  ,
+    "aboutPage": "這是一個關於頁面",
     "save": "儲存",
     "cancel": "取消",
     "edit": "編輯",

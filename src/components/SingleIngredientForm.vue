@@ -107,7 +107,7 @@ const saveIngredient = () => {
             @click="saveIngredient"
             :disabled="!ingredient.name || !ingredient.amount || !ingredient.totalPrice"
           >
-            {{ mode === 'create' ? '新增材料' : '儲存變更' }}
+            {{ mode === 'create' ? $t('ingredient.newIngredient') : $t('common.save') }}
           </button>
         </div>
       </div>
