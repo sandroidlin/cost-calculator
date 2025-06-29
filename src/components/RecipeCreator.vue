@@ -77,6 +77,12 @@ const removeIngredientFromRecipe = (id: number) => {
   newRecipe.value.ingredients = newRecipe.value.ingredients.filter((ing) => ing.id !== id)
 }
 
+const selectIngredient = (ingredient: Ingredient) => {
+  selectedIngredient.value = ingredient.id
+  showDropdown.value = false
+  searchQuery.value = ingredient.name
+}
+
 const saveRecipe = () => {
   if (!newRecipe.value.name || newRecipe.value.ingredients.length === 0) return
 
@@ -153,11 +159,7 @@ const saveRecipe = () => {
                   :key="ingredient.id"
                   class="dropdown-item"
                   :class="{ selected: selectedIngredient === ingredient.id }"
-                  @click="
-                    selectedIngredient = ingredient.id
-                    showDropdown = false
-                    searchQuery = ingredient.name
-                  "
+                  @click="selectIngredient(ingredient)"
                 >
                   {{ ingredient.name }}
                 </div>
