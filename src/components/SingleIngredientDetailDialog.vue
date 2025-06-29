@@ -2,7 +2,7 @@
 import { defineProps, defineEmits } from 'vue'
 import type { SingleIngredient } from '@/stores/ingredients'
 
-const props = defineProps<{
+defineProps<{
   ingredient: SingleIngredient
 }>()
 

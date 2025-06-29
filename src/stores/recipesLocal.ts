@@ -40,11 +40,14 @@ export const useRecipesStore = defineStore('recipes', () => {
   const loadSavedRecipes = () => {
     const savedRecipes = localStorage.getItem('recipes')
     if (savedRecipes) {
-      recipes.value = JSON.parse(savedRecipes).map((recipe: any) => ({
-        ...recipe,
-        // Add status field to existing recipes if not present
-        status: recipe.status || 'complete'
-      }))
+      recipes.value = JSON.parse(savedRecipes).map((recipe: unknown) => {
+        const item = recipe as any // eslint-disable-line @typescript-eslint/no-explicit-any -- Legacy data needs any for migration
+        return {
+          ...item,
+          // Add status field to existing recipes if not present
+          status: item.status || 'complete'
+        }
+      })
       saveRecipes()
     }
   }

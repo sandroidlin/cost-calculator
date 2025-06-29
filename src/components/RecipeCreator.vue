@@ -49,9 +49,6 @@ const getIngredientUnit = (ingredient: Ingredient): string => {
   return ingredient.type === '單一材料' ? ingredient.unit : ingredient.mainUnit
 }
 
-const getIngredientAmount = (ingredient: Ingredient): number => {
-  return ingredient.type === '單一材料' ? ingredient.amount : ingredient.totalAmount
-}
 
 const addIngredientToRecipe = () => {
   if (!selectedIngredient.value || !amount.value) return

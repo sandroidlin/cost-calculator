@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, defineProps, defineEmits } from 'vue'
-import type { SingleIngredient, UnitType, CategoryType } from '@/stores/ingredients'
-import { UNIT_STEPS, CATEGORIES } from '@/stores/ingredients'
+import type { SingleIngredient, UnitType } from '@/stores/ingredients'
+import { CATEGORIES } from '@/stores/ingredients'
 
 const props = defineProps<{
   initialIngredient?: SingleIngredient

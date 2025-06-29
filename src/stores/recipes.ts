@@ -36,6 +36,26 @@ export interface Recipe {
   status: RecipeStatus
 }
 
+// InstantDB data types
+interface InstantDBRecipeIngredient {
+  ingredientId: number
+  amount: number
+  name: string
+  unit: string
+  unitPrice: number
+}
+
+interface InstantDBRecipe {
+  id: string | number
+  name: string
+  bartenderName: string
+  glass: string
+  ice: string
+  totalCost: number
+  status: string
+  recipeIngredients: InstantDBRecipeIngredient[]
+}
+
 export const useRecipesStore = defineStore('recipes', () => {
   const authStore = useAuthStore()
   const recipes = ref<Recipe[]>([])
@@ -74,12 +94,12 @@ export const useRecipesStore = defineStore('recipes', () => {
     console.log('🍸 Recipe syncFromInstant called, instantData:', instantData.value)
     if (instantData.value?.recipes) {
       console.log('📥 Found recipes data:', instantData.value.recipes.length, 'items')
-      recipes.value = instantData.value.recipes.map((item: any) => {
+      recipes.value = instantData.value.recipes.map((item: InstantDBRecipe) => {
         const ingredients: RecipeIngredient[] = []
         const garnishes: RecipeIngredient[] = []
 
         if (item.recipeIngredients) {
-          item.recipeIngredients.forEach((ri: any) => {
+          item.recipeIngredients.forEach((ri: InstantDBRecipeIngredient) => {
             const ingredient = {
               id: typeof ri.id === 'string' ? parseInt(ri.id) || Date.now() : ri.id,
               ingredientId: ri.ingredientId,
@@ -120,11 +140,14 @@ export const useRecipesStore = defineStore('recipes', () => {
   const loadSavedRecipes = () => {
     const savedRecipes = localStorage.getItem('recipes')
     if (savedRecipes) {
-      recipes.value = JSON.parse(savedRecipes).map((recipe: any) => ({
-        ...recipe,
-        // Add status field to existing recipes if not present
-        status: recipe.status || 'complete'
-      }))
+      recipes.value = JSON.parse(savedRecipes).map((recipe: unknown) => {
+        const item = recipe as any // eslint-disable-line @typescript-eslint/no-explicit-any -- Legacy data needs any for migration
+        return {
+          ...item,
+          // Add status field to existing recipes if not present
+          status: item.status || 'complete'
+        }
+      })
       saveRecipes()
     }
   }
@@ -179,8 +202,8 @@ export const useRecipesStore = defineStore('recipes', () => {
           }).link({ recipe: recipeId })
         )
       ])
-    } catch (err: any) {
-      error.value = err.message || 'Failed to save to database'
+    } catch (err: unknown) {
+      error.value = (err as Error).message || 'Failed to save to database'
       console.error('Failed to save recipe to InstantDB:', err)
       throw err // Re-throw to propagate to import handler
     }

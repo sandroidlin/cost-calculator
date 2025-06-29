@@ -40,6 +40,27 @@ export interface CompoundIngredient extends BaseIngredient {
 
 export type Ingredient = SingleIngredient | CompoundIngredient
 
+// InstantDB data types
+interface InstantDBCompoundIngredient {
+  ingredientId: number
+  amount: number
+}
+
+interface InstantDBIngredient {
+  id: string | number
+  name: string
+  category: string
+  type: string
+  unitPrice: number
+  totalPrice: number
+  mainUnit?: string
+  amount?: number
+  unit?: string
+  compoundIngredients?: InstantDBCompoundIngredient[]
+  totalAmount?: number
+  instructions?: string
+}
+
 export const UNIT_STEPS = {
   'ml': 50,
   'g': 10,
@@ -78,7 +99,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
     console.log('🔄 syncFromInstant called, instantData:', instantData.value)
     if (instantData.value?.ingredients) {
       console.log('📥 Found ingredients data:', instantData.value.ingredients.length, 'items')
-      ingredients.value = instantData.value.ingredients.map((item: any) => {
+      ingredients.value = instantData.value.ingredients.map((item: InstantDBIngredient) => {
         const baseIngredient = {
           id: typeof item.id === 'string' ? parseInt(item.id) || Date.now() : item.id,
           name: item.name,
@@ -93,7 +114,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
             ...baseIngredient,
             type: '複合材料' as const,
             mainUnit: item.mainUnit as UnitType,
-            ingredients: item.compoundIngredients?.map((ci: any) => ({
+            ingredients: item.compoundIngredients?.map((ci: InstantDBCompoundIngredient) => ({
               ingredientId: ci.ingredientId,
               amount: ci.amount
             })) || [],
@@ -120,35 +141,36 @@ export const useIngredientsStore = defineStore('ingredients', () => {
     const savedIngredients = localStorage.getItem('ingredients')
     if (savedIngredients) {
       const parsedIngredients = JSON.parse(savedIngredients)
-      ingredients.value = parsedIngredients.map((ing: any) => {
+      ingredients.value = parsedIngredients.map((ing: unknown) => {
+        const item = ing as any // eslint-disable-line @typescript-eslint/no-explicit-any -- Legacy data needs any for migration
         // Migrate old categories to new ones
-        let category = ing.category
+        let category = item.category
         if (category === '糖') category = '甜'
         if (category === '香料') category = '調味料'
 
-        if (ing.type === '複合材料') {
+        if (item.type === '複合材料') {
           return {
-            id: ing.id,
-            name: ing.name,
+            id: item.id,
+            name: item.name,
             category: category as CategoryType,
             type: '複合材料' as const,
-            mainUnit: ing.mainUnit as UnitType,
-            ingredients: ing.ingredients,
-            totalAmount: ing.totalAmount,
-            totalPrice: ing.totalPrice,
-            unitPrice: ing.unitPrice,
-            instructions: ing.instructions
+            mainUnit: item.mainUnit as UnitType,
+            ingredients: item.ingredients,
+            totalAmount: item.totalAmount,
+            totalPrice: item.totalPrice,
+            unitPrice: item.unitPrice,
+            instructions: item.instructions
           }
         } else {
           return {
-            id: ing.id,
-            name: ing.name,
+            id: item.id,
+            name: item.name,
             category: category as CategoryType,
             type: '單一材料' as const,
-            amount: ing.amount,
-            unit: ing.unit as UnitType,
-            totalPrice: ing.totalPrice,
-            unitPrice: ing.unitPrice
+            amount: item.amount,
+            unit: item.unit as UnitType,
+            totalPrice: item.totalPrice,
+            unitPrice: item.unitPrice
           }
         }
       })
@@ -205,8 +227,8 @@ export const useIngredientsStore = defineStore('ingredients', () => {
           )
         ])
       }
-    } catch (err: any) {
-      error.value = err.message || 'Failed to save to database'
+    } catch (err: unknown) {
+      error.value = (err as Error).message || 'Failed to save to database'
       console.error('Failed to save ingredient to InstantDB:', err)
       throw err // Re-throw to propagate to import handler
     }

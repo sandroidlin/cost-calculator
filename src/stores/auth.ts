@@ -18,8 +18,8 @@ export const useAuthStore = defineStore('auth', () => {
       error.value = null
       await db.auth.sendMagicCode({ email })
       sentEmail.value = email
-    } catch (err: any) {
-      error.value = err.body?.message || 'Failed to send magic code'
+    } catch (err: unknown) {
+      error.value = (err as { body?: { message?: string } }).body?.message || 'Failed to send magic code'
       sentEmail.value = ''
       throw err
     } finally {
@@ -33,8 +33,8 @@ export const useAuthStore = defineStore('auth', () => {
       error.value = null
       await db.auth.signInWithMagicCode({ email, code })
       sentEmail.value = ''
-    } catch (err: any) {
-      error.value = err.body?.message || 'Invalid code'
+    } catch (err: unknown) {
+      error.value = (err as { body?: { message?: string } }).body?.message || 'Invalid code'
       throw err
     } finally {
       isLoading.value = false
@@ -46,8 +46,8 @@ export const useAuthStore = defineStore('auth', () => {
       await db.auth.signOut()
       sentEmail.value = ''
       error.value = null
-    } catch (err: any) {
-      error.value = err.body?.message || 'Failed to sign out'
+    } catch (err: unknown) {
+      error.value = (err as { body?: { message?: string } }).body?.message || 'Failed to sign out'
       throw err
     }
   }

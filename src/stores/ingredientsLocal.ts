@@ -54,35 +54,36 @@ export const useIngredientsStore = defineStore('ingredients', () => {
     const savedIngredients = localStorage.getItem('ingredients')
     if (savedIngredients) {
       const parsedIngredients = JSON.parse(savedIngredients)
-      ingredients.value = parsedIngredients.map((ing: any) => {
+      ingredients.value = parsedIngredients.map((ing: unknown) => {
+        const item = ing as any // eslint-disable-line @typescript-eslint/no-explicit-any -- Legacy data needs any for migration
         // Migrate old categories to new ones
-        let category = ing.category
+        let category = item.category
         if (category === '糖') category = '甜'
         if (category === '香料') category = '調味料'
         
-        if (ing.type === '複合材料') {
+        if (item.type === '複合材料') {
           return {
-            id: ing.id,
-            name: ing.name,
+            id: item.id,
+            name: item.name,
             category: category as CategoryType,
             type: '複合材料' as const,
-            mainUnit: ing.mainUnit as UnitType,
-            ingredients: ing.ingredients,
-            totalAmount: ing.totalAmount,
-            totalPrice: ing.totalPrice,
-            unitPrice: ing.unitPrice,
-            instructions: ing.instructions
+            mainUnit: item.mainUnit as UnitType,
+            ingredients: item.ingredients,
+            totalAmount: item.totalAmount,
+            totalPrice: item.totalPrice,
+            unitPrice: item.unitPrice,
+            instructions: item.instructions
           }
         } else {
           return {
-            id: ing.id,
-            name: ing.name,
+            id: item.id,
+            name: item.name,
             category: category as CategoryType,
             type: '單一材料' as const,
-            amount: ing.amount,
-            unit: ing.unit as UnitType,
-            totalPrice: ing.totalPrice,
-            unitPrice: ing.unitPrice
+            amount: item.amount,
+            unit: item.unit as UnitType,
+            totalPrice: item.totalPrice,
+            unitPrice: item.unitPrice
           }
         }
       })
