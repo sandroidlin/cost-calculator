@@ -428,20 +428,28 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
       isLoading.value = true
       error.value = null
 
-      // Get user's personal ingredients and recipes
+      // Get user's personal ingredients and recipes (filter null workspaceId in code)
       const { data } = await db.queryOnce({
         ingredients: {
-          $: { where: { '$user.id': authStore.user.id, workspaceId: null } },
+          $: { where: { '$user.id': authStore.user.id } },
         },
         recipes: {
-          $: { where: { '$user.id': authStore.user.id, workspaceId: null } },
+          $: { where: { '$user.id': authStore.user.id } },
         },
       })
+
+      // Filter for items with null workspaceId (personal data)
+      const personalIngredients = (data?.ingredients || []).filter(
+        (ingredient: any) => !ingredient.workspaceId
+      )
+      const personalRecipes = (data?.recipes || []).filter(
+        (recipe: any) => !recipe.workspaceId
+      )
 
       const transactions = []
 
       // Migrate ingredients
-      for (const ingredient of data?.ingredients || []) {
+      for (const ingredient of personalIngredients) {
         transactions.push(
           db.tx.ingredients[ingredient.id].update({
             workspaceId,
@@ -450,7 +458,7 @@ export const useWorkspacesStore = defineStore('workspaces', () => {
       }
 
       // Migrate recipes
-      for (const recipe of data?.recipes || []) {
+      for (const recipe of personalRecipes) {
         transactions.push(
           db.tx.recipes[recipe.id].update({
             workspaceId,
