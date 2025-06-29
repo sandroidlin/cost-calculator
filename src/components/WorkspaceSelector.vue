@@ -110,7 +110,7 @@
               class="btn-primary"
               :disabled="isLoading || !newWorkspace.name.trim()"
             >
-              {{ isLoading ? 'Creating...' : '{{ $t('workspace.createWorkspace') }}' }}
+              {{ isLoading ? $t('workspace.creating') : $t('workspace.createWorkspace') }}
             </button>
           </div>
         </form>
@@ -148,7 +148,7 @@
               {{ $t('workspace.cancel') }}
             </button>
             <button type="submit" class="btn-primary" :disabled="isLoading || !inviteToken.trim()">
-              {{ isLoading ? 'Joining...' : '{{ $t('workspace.joinWorkspace') }}' }}
+              {{ isLoading ? $t('workspace.joining') : $t('workspace.joinWorkspace') }}
             </button>
           </div>
         </form>

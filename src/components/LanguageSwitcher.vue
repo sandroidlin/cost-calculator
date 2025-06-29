@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { PhGlobe } from '@phosphor-icons/vue'
 
@@ -10,10 +11,12 @@ const switchLanguage = (lang: string) => {
 }
 
 // Load preferred language from localStorage on mount
-const savedLang = localStorage.getItem('preferred-language')
-if (savedLang && availableLocales.value.includes(savedLang)) {
-  locale.value = savedLang
-}
+onMounted(() => {
+  const savedLang = localStorage.getItem('preferred-language')
+  if (savedLang && availableLocales.includes(savedLang)) {
+    locale.value = savedLang
+  }
+})
 </script>
 
 <template>

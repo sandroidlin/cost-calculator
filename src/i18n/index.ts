@@ -4,7 +4,8 @@ import type { MessageSchema } from './schemas'
 import en from './locales/en.json'
 import zh from './locales/zh.json'
 
-export default createI18n<[MessageSchema], 'en' | 'zh'>({
+export default createI18n({
+  legacy: false, // Use Composition API mode
   locale: 'zh', // Default to Chinese
   fallbackLocale: 'en',
   messages: {
