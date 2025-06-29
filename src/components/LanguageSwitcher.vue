@@ -11,7 +11,7 @@ const switchLanguage = (lang: string) => {
 
 // Load preferred language from localStorage on mount
 const savedLang = localStorage.getItem('preferred-language')
-if (savedLang && availableLocales.includes(savedLang)) {
+if (savedLang && availableLocales.value.includes(savedLang)) {
   locale.value = savedLang
 }
 </script>

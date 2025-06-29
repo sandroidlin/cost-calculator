@@ -26,6 +26,14 @@
     "resendCode": "重新發送驗證碼"
   },
   "workspace": {
+    "switchWorkspace": "切換工作區",
+    "selectWorkspace": "選擇工作區",
+    "yourPrivate": "您的私人材料和酒譜",
+    "collaborative": "協作工作區",
+    "createNew": "建立新工作區",
+    "creating": "建立中...",
+    "joining": "加入中..."
+  ,
     "workspaces": "工作區",
     "personalWorkspace": "個人工作區",
     "owner": "擁有者",
@@ -114,6 +122,8 @@
     "searchIngredients": "搜尋材料..."
   },
   "common": {
+    "aboutPage": "這是一個關於頁面"
+  ,
     "save": "儲存",
     "cancel": "取消",
     "edit": "編輯",

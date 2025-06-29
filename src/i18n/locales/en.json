@@ -26,6 +26,14 @@
     "resendCode": "Resend verification code"
   },
   "workspace": {
+    "switchWorkspace": "Switch Workspace",
+    "selectWorkspace": "Select Workspace",
+    "yourPrivate": "Your private ingredients and recipes",
+    "collaborative": "Collaborative workspace",
+    "createNew": "Create New Workspace",
+    "creating": "Creating...",
+    "joining": "Joining..."
+  ,
     "workspaces": "Workspaces",
     "personalWorkspace": "Personal Workspace",
     "owner": "Owner",
@@ -114,6 +122,8 @@
     "searchIngredients": "Search ingredients..."
   },
   "common": {
+    "aboutPage": "This is an about page"
+  ,
     "save": "Save",
     "cancel": "Cancel",
     "edit": "Edit",
