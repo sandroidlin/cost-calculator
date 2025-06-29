@@ -42,10 +42,37 @@ npx instant-cli@latest push perms     # Update permissions
 
 ### State Management
 - **Pinia Stores**: Located in `src/stores/`
-  - `auth.ts`: Authentication state
-  - `ingredients.ts`: Ingredient management
-  - `recipes.ts`: Recipe management
-- **Dual Store Pattern**: Most stores have both local and cloud variants
+  - `auth.ts`: Authentication state using InstantDB auth
+  - `ingredients.ts`: Ingredient management with workspace context
+  - `recipes.ts`: Recipe management with workspace context
+  - `workspaces.ts`: Workspace collaboration management
+- **Hybrid Storage Pattern**: Cloud-first with localStorage fallback
+- **Workspace Context**: Data isolation based on current workspace
+
+#### InstantDB State Binding Best Practices
+
+**Reactive Query Limitations**:
+- InstantDB Vue integration (`@dorilama/instantdb-vue`) has reliability issues with state synchronization
+- Reactive queries (`db.useQuery()`) can cause UI desync where store data loads but UI doesn't update
+- Recommended approach: Use manual data loading with `db.queryOnce()` for critical data
+
+**Vue/Pinia Reactivity Patterns**:
+```typescript
+// ❌ Destructuring breaks reactivity
+const { workspaces, currentWorkspace } = workspacesStore
+
+// ✅ Use computed properties for reactivity
+const workspaces = computed(() => workspacesStore.workspaces)
+const currentWorkspace = computed(() => workspacesStore.currentWorkspace)
+
+// ✅ Actions can be safely destructured
+const { createWorkspace, deleteWorkspace } = workspacesStore
+```
+
+**Query Strategies**:
+- **Personal Data**: Use `{ where: { $user: authStore.user.id } }` for user-owned data
+- **Workspace Data**: Use `{ where: { workspaceId: currentWorkspaceId } }` for workspace-scoped data
+- **Manual Loading**: Prefer `loadWorkspaces()` style functions over reactive queries for reliability
 
 ### Key Directories
 - `src/components/`: Vue components (Auth*, *Dialog, *Form, Recipe*, Ingredient*)
@@ -64,6 +91,9 @@ npx instant-cli@latest push perms     # Update permissions
 - **Recipes**: Cocktail recipes with cost calculations
 - **Recipe Ingredients**: Many-to-many relationships
 - **Users**: Authentication and data ownership
+- **Workspaces**: Collaborative workspaces for team data sharing
+- **Workspace Members**: User roles and permissions within workspaces
+- **Workspace Invites**: Token-based invitation system
 
 ## Environment Setup
 
@@ -95,6 +125,7 @@ VITE_BASE_PATH=/cost-calculator/  # For GitHub Pages
 - Data automatically syncs between local storage and cloud when user authenticates
 - Excel import/export functionality available via `xlsx` library
 - Hash-based routing used for better deployment compatibility
+- Workspace context preserved in URL query parameters for bookmarkable collaboration links
 
 ## Code Quality Requirements
 
