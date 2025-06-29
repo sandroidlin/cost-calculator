@@ -69,6 +69,7 @@ export const useRecipesStore = defineStore('recipes', () => {
   // Query recipes from InstantDB - direct reactive approach
   const { isLoading: queryLoading, error: queryError, data: instantData } = db.useQuery({
     recipes: {
+      $: { where: { $user: authStore.user?.id } },
       recipeIngredients: {}
     }
   })

@@ -83,6 +83,7 @@ export const useIngredientsStore = defineStore('ingredients', () => {
   // Query ingredients from InstantDB - direct reactive approach
   const { isLoading: queryLoading, error: queryError, data: instantData } = db.useQuery({
     ingredients: {
+      $: { where: { $user: authStore.user?.id } },
       compoundIngredients: {}
     }
   })
