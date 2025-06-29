@@ -54,6 +54,10 @@ export const useIngredientsStore = defineStore('ingredients', () => {
   const ingredients = ref<Ingredient[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  
+  // Migration modal state
+  const showMigrationModal = ref(false)
+  const migrationData = ref<Ingredient[]>([])
 
   // Query ingredients from InstantDB - direct reactive approach
   const { isLoading: queryLoading, error: queryError, data: instantData } = db.useQuery({
@@ -208,19 +212,50 @@ export const useIngredientsStore = defineStore('ingredients', () => {
     }
   }
 
-  // Migration function to move localStorage data to InstantDB
+  // Migration function to check for localStorage data and show modal
   const migrateLocalDataToInstant = async () => {
     const localData = localStorage.getItem('ingredients')
     if (localData && authStore.isAuthenticated) {
       try {
         const parsedData = JSON.parse(localData) as Ingredient[]
-        for (const ingredient of parsedData) {
-          await saveToInstant(ingredient)
+        if (parsedData.length > 0) {
+          migrationData.value = parsedData
+          showMigrationModal.value = true
+          // Return a promise that resolves when user makes a choice
+          return new Promise<void>((resolve) => {
+            const unwatch = watch(showMigrationModal, (show) => {
+              if (!show) {
+                unwatch()
+                resolve()
+              }
+            })
+          })
         }
       } catch (error) {
-        console.error('Failed to migrate ingredients to InstantDB:', error)
+        console.error('Failed to parse local ingredients data:', error)
       }
     }
+  }
+  
+  // Handle migration modal actions
+  const handleMigrationMerge = async () => {
+    try {
+      for (const ingredient of migrationData.value) {
+        await saveToInstant(ingredient)
+      }
+    } catch (error) {
+      console.error('Failed to migrate ingredients to InstantDB:', error)
+    } finally {
+      localStorage.removeItem('ingredients')
+      migrationData.value = []
+      showMigrationModal.value = false
+    }
+  }
+  
+  const handleMigrationDiscard = () => {
+    localStorage.removeItem('ingredients')
+    migrationData.value = []
+    showMigrationModal.value = false
   }
 
   // Migration function to cache InstantDB data to localStorage
@@ -410,13 +445,15 @@ export const useIngredientsStore = defineStore('ingredients', () => {
   watch(() => authStore.isAuthenticated, async (isAuth, wasAuth) => {
     console.log('🔐 Auth state changed:', { isAuth, wasAuth })
     if (isAuth && !wasAuth) {
-      // User just signed in - sync from InstantDB to get the latest data
-      console.log('👤 User signed in, syncing from InstantDB')
+      // User just signed in - first migrate local data if any, then sync from InstantDB
+      console.log('👤 User signed in, checking for local data to migrate')
+      await migrateLocalDataToInstant()
       syncFromInstant()
     } else if (!isAuth && wasAuth) {
-      // User just signed out - load from localStorage
-      console.log('👤 User signed out, loading from localStorage')
-      loadSavedIngredients()
+      // User just signed out - clear ALL data including localStorage for security
+      console.log('👤 User signed out, clearing all data for security')
+      ingredients.value = [] // Clear reactive state immediately
+      localStorage.removeItem('ingredients') // Clear localStorage for security
     }
   }, { immediate: false })
 
@@ -434,8 +471,11 @@ export const useIngredientsStore = defineStore('ingredients', () => {
   // Initial load based on authentication state
   console.log('🚀 Initial load, auth state:', authStore.isAuthenticated)
   if (authStore.isAuthenticated) {
-    console.log('👤 Authenticated on init, syncing from InstantDB')
-    syncFromInstant()
+    console.log('👤 Authenticated on init, checking for migration then syncing from InstantDB')
+    // Check for local data migration on initial load too
+    migrateLocalDataToInstant().then(() => {
+      syncFromInstant()
+    })
   } else {
     console.log('👤 Not authenticated on init, loading from localStorage')
     loadSavedIngredients()
@@ -458,6 +498,11 @@ export const useIngredientsStore = defineStore('ingredients', () => {
     removeIngredient,
     loadSavedIngredients,
     saveIngredients,
-    importData
+    importData,
+    // Migration modal
+    showMigrationModal,
+    migrationData,
+    handleMigrationMerge,
+    handleMigrationDiscard
   }
 })

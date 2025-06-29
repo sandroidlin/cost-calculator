@@ -2,10 +2,15 @@
 import { ref } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useIngredientsStore } from '@/stores/ingredients'
+import { useRecipesStore } from '@/stores/recipes'
 import Footer from './components/Footer.vue'
 import AuthLogin from './components/AuthLogin.vue'
+import MigrationModal from './components/MigrationModal.vue'
 
 const authStore = useAuthStore()
+const ingredientsStore = useIngredientsStore()
+const recipesStore = useRecipesStore()
 const showAuthDialog = ref(false)
 </script>
 
@@ -53,6 +58,23 @@ const showAuthDialog = ref(false)
         <RouterView />
       </div>
     </div>
+
+    <!-- Migration Modals -->
+    <MigrationModal
+      :show="ingredientsStore.showMigrationModal"
+      :item-count="ingredientsStore.migrationData.length"
+      item-type="ingredients"
+      @merge="ingredientsStore.handleMigrationMerge"
+      @discard="ingredientsStore.handleMigrationDiscard"
+    />
+    
+    <MigrationModal
+      :show="recipesStore.showMigrationModal"
+      :item-count="recipesStore.migrationData.length"
+      item-type="recipes"
+      @merge="recipesStore.handleMigrationMerge"
+      @discard="recipesStore.handleMigrationDiscard"
+    />
 
     <Footer />
   </div>

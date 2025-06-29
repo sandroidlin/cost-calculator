@@ -40,6 +40,10 @@ export const useRecipesStore = defineStore('recipes', () => {
   const recipes = ref<Recipe[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  
+  // Migration modal state
+  const showMigrationModal = ref(false)
+  const migrationData = ref<Recipe[]>([])
 
   // Query recipes from InstantDB - direct reactive approach
   const { isLoading: queryLoading, error: queryError, data: instantData } = db.useQuery({
@@ -181,19 +185,50 @@ export const useRecipesStore = defineStore('recipes', () => {
     }
   }
 
-  // Migration function to move localStorage data to InstantDB
+  // Migration function to check for localStorage data and show modal
   const migrateLocalDataToInstant = async () => {
     const localData = localStorage.getItem('recipes')
     if (localData && authStore.isAuthenticated) {
       try {
         const parsedData = JSON.parse(localData) as Recipe[]
-        for (const recipe of parsedData) {
-          await saveToInstant(recipe)
+        if (parsedData.length > 0) {
+          migrationData.value = parsedData
+          showMigrationModal.value = true
+          // Return a promise that resolves when user makes a choice
+          return new Promise<void>((resolve) => {
+            const unwatch = watch(showMigrationModal, (show) => {
+              if (!show) {
+                unwatch()
+                resolve()
+              }
+            })
+          })
         }
       } catch (error) {
-        console.error('Failed to migrate recipes to InstantDB:', error)
+        console.error('Failed to parse local recipes data:', error)
       }
     }
+  }
+  
+  // Handle migration modal actions
+  const handleMigrationMerge = async () => {
+    try {
+      for (const recipe of migrationData.value) {
+        await saveToInstant(recipe)
+      }
+    } catch (error) {
+      console.error('Failed to migrate recipes to InstantDB:', error)
+    } finally {
+      localStorage.removeItem('recipes')
+      migrationData.value = []
+      showMigrationModal.value = false
+    }
+  }
+  
+  const handleMigrationDiscard = () => {
+    localStorage.removeItem('recipes')
+    migrationData.value = []
+    showMigrationModal.value = false
   }
 
   // Migration function to cache InstantDB data to localStorage
@@ -206,21 +241,22 @@ export const useRecipesStore = defineStore('recipes', () => {
   // Watch for authentication state changes and handle data migration
   watch(() => authStore.isAuthenticated, async (isAuth, wasAuth) => {
     if (isAuth && !wasAuth) {
-      // User just signed in - migrate localStorage data to InstantDB
+      // User just signed in - first migrate local data if any, then sync from InstantDB
       await migrateLocalDataToInstant()
-      // Then sync from InstantDB to get the latest data
       syncFromInstant()
     } else if (!isAuth && wasAuth) {
-      // User just signed out - cache current data to localStorage
-      cacheInstantDataLocally()
-      // Then load from localStorage
-      loadSavedRecipes()
+      // User just signed out - clear ALL data including localStorage for security
+      recipes.value = [] // Clear reactive state immediately
+      localStorage.removeItem('recipes') // Clear localStorage for security
     }
   }, { immediate: false })
 
   // Initial load based on authentication state
   if (authStore.isAuthenticated) {
-    syncFromInstant()
+    // Check for local data migration on initial load too
+    migrateLocalDataToInstant().then(() => {
+      syncFromInstant()
+    })
   } else {
     loadSavedRecipes()
   }
@@ -293,6 +329,11 @@ export const useRecipesStore = defineStore('recipes', () => {
     removeRecipe,
     loadSavedRecipes,
     saveRecipes,
-    importData
+    importData,
+    // Migration modal
+    showMigrationModal,
+    migrationData,
+    handleMigrationMerge,
+    handleMigrationDiscard
   }
 })
