@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { defineProps, defineEmits } from 'vue'
-import { storeToRefs } from 'pinia'
-import { useRecipesStore } from '@/stores/recipes'
 import type { Recipe } from '@/stores/recipes'
 
-const props = defineProps<{
+defineProps<{
   recipe: Recipe
 }>()
 
@@ -14,7 +12,6 @@ const emit = defineEmits<{
   delete: [id: number]
 }>()
 
-const recipesStore = useRecipesStore()
 </script>
 
 <template>

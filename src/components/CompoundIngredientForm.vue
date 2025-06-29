@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, defineProps, defineEmits } from 'vue'
-import type { CompoundIngredient, SingleIngredient, UnitType, CategoryType, Ingredient } from '@/stores/ingredients'
+import type { CompoundIngredient, UnitType, Ingredient } from '@/stores/ingredients'
 import { CATEGORIES } from '@/stores/ingredients'
 import { useIngredientsStore } from '@/stores/ingredients'
 import { storeToRefs } from 'pinia'

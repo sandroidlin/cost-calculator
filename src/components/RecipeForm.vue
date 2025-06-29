@@ -35,10 +35,6 @@ const decorationIngredients = computed(() => {
   return props.ingredients.filter(ing => ing.category === '裝飾')
 })
 
-const selectedGarnish = computed(() => {
-  if (!recipe.value.garnishes.length) return null
-  return props.ingredients.find(ing => ing.id === recipe.value.garnishes[0].ingredientId)
-})
 
 // Initialize ingredient inputs
 onMounted(() => {

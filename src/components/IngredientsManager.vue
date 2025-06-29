@@ -2,8 +2,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useIngredientsStore } from '@/stores/ingredients'
-import type { Ingredient, SingleIngredient, CompoundIngredient, UnitType, CategoryType } from '@/stores/ingredients'
-import { UNIT_STEPS, CATEGORIES } from '@/stores/ingredients'
+import type { Ingredient, SingleIngredient, CompoundIngredient, CategoryType } from '@/stores/ingredients'
+import { CATEGORIES } from '@/stores/ingredients'
 import SingleIngredientForm from './SingleIngredientForm.vue'
 import CompoundIngredientForm from './CompoundIngredientForm.vue'
 import SingleIngredientDetailDialog from './SingleIngredientDetailDialog.vue'
@@ -43,12 +43,7 @@ const editingIngredient = ref<Ingredient>({
   unitPrice: 0
 })
 
-const unitOptions: UnitType[] = ['ml', 'g', 'dash', '份']
 
-const calculatedUnitPrice = computed(() => {
-  if (!formData.value.amount || !formData.value.totalPrice) return 0
-  return Math.round((formData.value.totalPrice / formData.value.amount) * 100) / 100
-})
 
 const searchQuery = ref('')
 const selectedCategory = ref<CategoryType | '全部'>('全部')
@@ -127,15 +122,14 @@ const getIngredientUnit = (ingredient: Ingredient): string => {
   return ingredient.type === '單一材料' ? ingredient.unit : ingredient.mainUnit
 }
 
-const getIngredientAmount = (ingredient: Ingredient): number => {
-  return ingredient.type === '單一材料' ? ingredient.amount : ingredient.totalAmount
-}
 
 const handleSubmit = (ingredient: SingleIngredient | CompoundIngredient) => {
   if (ingredient.type === '單一材料') {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, type, unitPrice, ...rest } = ingredient
     ingredientsStore.addSingleIngredient(rest)
   } else {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, type, totalAmount, totalPrice, unitPrice, ...rest } = ingredient
     ingredientsStore.addCompoundIngredient(rest)
   }
@@ -170,33 +164,10 @@ const handleDelete = (id: number) => {
   }
 }
 
-const handleEdit = (ingredient: Ingredient) => {
-  ingredientsStore.updateIngredient(ingredient)
-  showDialog.value = false
-  notificationMessage.value = '材料已成功更新'
-  showNotification.value = true
-  setTimeout(() => {
-    showNotification.value = false
-  }, 3000)
-}
 
-const incrementAmount = () => {
-  formData.value.amount += UNIT_STEPS[formData.value.unit]
-}
 
-const decrementAmount = () => {
-  const newAmount = formData.value.amount - UNIT_STEPS[formData.value.unit]
-  formData.value.amount = Math.max(0, newAmount)
-}
 
-const incrementTotalPrice = () => {
-  formData.value.totalPrice = Math.round((formData.value.totalPrice + 10) * 100) / 100
-}
 
-const decrementTotalPrice = () => {
-  const newPrice = Math.round((formData.value.totalPrice - 10) * 100) / 100
-  formData.value.totalPrice = Math.max(0, newPrice)
-}
 
 const openIngredientDialog = (ingredient: Ingredient) => {
   selectedIngredient.value = ingredient
@@ -219,13 +190,6 @@ const closeCreateDialog = () => {
   }
 }
 
-const openEditDialog = () => {
-  if (!selectedIngredient.value) return
-  
-  editingIngredient.value = { ...selectedIngredient.value }
-  showEditDialog.value = true
-  showDialog.value = false
-}
 
 const closeEditDialog = () => {
   showEditDialog.value = false

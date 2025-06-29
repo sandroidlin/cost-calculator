@@ -43,14 +43,14 @@ const exportData = () => {
   }, 3000)
 }
 
-const importData = (event: Event) => {
+const importData = async (event: Event) => {
   const fileInput = event.target as HTMLInputElement
   if (!fileInput.files?.length) return
 
   const file = fileInput.files[0]
   const reader = new FileReader()
 
-  reader.onload = (e) => {
+  reader.onload = async (e) => {
     try {
       const data = JSON.parse(e.target?.result as string) as ExportData
       
@@ -59,13 +59,9 @@ const importData = (event: Event) => {
         throw new Error('無效的資料格式')
       }
 
-      // Import data
-      localStorage.setItem('ingredients', JSON.stringify(data.ingredients))
-      localStorage.setItem('recipes', JSON.stringify(data.recipes))
-      
-      // Reload data in stores
-      ingredientsStore.loadSavedIngredients()
-      recipesStore.loadSavedRecipes()
+      // Import data through store methods to handle both storage backends
+      await ingredientsStore.importData(data.ingredients)
+      await recipesStore.importData(data.recipes)
 
       notificationMessage.value = '資料已成功匯入'
       showNotification.value = true
@@ -76,7 +72,10 @@ const importData = (event: Event) => {
       // Reset file input
       fileInput.value = ''
     } catch (error) {
-      notificationMessage.value = '匯入失敗：無效的資料格式'
+      console.error('Import error:', error)
+      notificationMessage.value = error instanceof Error ? 
+        `匯入失敗：${error.message}` : 
+        '匯入失敗：無效的資料格式'
       showNotification.value = true
       setTimeout(() => {
         showNotification.value = false

@@ -3,9 +3,7 @@ import { ref, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRecipesStore } from '@/stores/recipes'
 import { useIngredientsStore } from '@/stores/ingredients'
-import type { RecipeIngredient, Recipe, IceType, RecipeStatus } from '@/stores/recipes'
-import { ICE_PRICES } from '@/stores/recipes'
-import type { Ingredient } from '@/stores/ingredients'
+import type { Recipe, RecipeStatus } from '@/stores/recipes'
 import RecipeDetailDialog from './RecipeDetailDialog.vue'
 import RecipeForm from './RecipeForm.vue'
 
@@ -32,137 +30,11 @@ const recipeCounts = computed(() => ({
   complete: recipes.value.filter(recipe => recipe.status === 'complete').length
 }))
 
-interface IngredientInput {
-  id: number
-  ingredient: null | Ingredient
-  amount: number
-}
-
-const newRecipe = ref({
-  name: '',
-  bartenderName: '',
-  glass: '',
-  ice: 'no冰' as IceType,
-  method: 'shake' as 'shake' | 'double strain shake' | 'stir' | 'blend' | 'Co2' | 'tap',
-  ingredients: [] as RecipeIngredient[],
-  garnishes: [] as RecipeIngredient[],
-  totalCost: 0
-})
-
-const preparationMethods = ['shake', 'double strain shake', 'stir', 'blend', 'Co2', 'tap'] as const
-type PreparationMethod = typeof preparationMethods[number]
-
-const ingredientInputs = ref<IngredientInput[]>([
-  { id: Date.now(), ingredient: null, amount: 0 }
-])
-
-const iceOptions = Object.keys(ICE_PRICES) as IceType[]
-
-const ingredientSearchQuery = ref('')
-const showIngredientDropdown = ref<number | null>(null)
-
-const filteredIngredients = computed(() => {
-  if (!ingredientSearchQuery.value) return ingredients.value
-  const query = ingredientSearchQuery.value.toLowerCase()
-  return ingredients.value.filter(ing => 
-    ing.name.toLowerCase().includes(query)
-  )
-})
-
-const selectIngredient = (inputId: number, ingredient: typeof ingredients.value[0]) => {
-  const input = ingredientInputs.value.find(i => i.id === inputId)
-  if (input) {
-    input.ingredient = ingredient
-  }
-  showIngredientDropdown.value = null
-  ingredientSearchQuery.value = ''
-}
-
-const addNewIngredientInput = () => {
-  ingredientInputs.value.push({
-    id: Date.now(),
-    ingredient: null,
-    amount: 0
-  })
-}
-
-const removeIngredientInput = (id: number) => {
-  ingredientInputs.value = ingredientInputs.value.filter(input => input.id !== id)
-}
-
-const calculateTotalCost = computed(() => {
-  return ingredientInputs.value.reduce((total, input) => {
-    if (!input.ingredient || !input.amount) return total
-    return total + (input.amount * input.ingredient.unitPrice)
-  }, 0)
-})
-
-const getIngredientUnit = (ingredient: Ingredient): string => {
-  return ingredient.type === '單一材料' ? ingredient.unit : ingredient.mainUnit
-}
-
-const addRecipe = () => {
-  if (!newRecipe.value.name || !newRecipe.value.bartenderName) return
-
-  const recipeIngredients: RecipeIngredient[] = ingredientInputs.value
-    .filter(input => input.ingredient && input.amount)
-    .map(input => ({
-      id: input.id,
-      ingredientId: input.ingredient!.id,
-      name: input.ingredient!.name,
-      amount: input.amount,
-      unit: getIngredientUnit(input.ingredient!),
-      unitPrice: input.ingredient!.unitPrice
-    }))
-
-  if (recipeIngredients.length === 0) return
-
-  recipesStore.addRecipe({
-    ...newRecipe.value,
-    ingredients: recipeIngredients,
-    totalCost: calculateTotalCost.value
-  })
-
-  // Show notification
-  notificationMessage.value = `${newRecipe.value.name}已成功加入資料庫`
-  showNotification.value = true
-  setTimeout(() => {
-    showNotification.value = false
-  }, 3000)
-
-  // Close dialog and reset form
-  closeCreateDialog()
-}
-
 const closeCreateDialog = () => {
   showCreateDialog.value = false
-  // Reset form
-  newRecipe.value = {
-    name: '',
-    bartenderName: '',
-    glass: '',
-    ice: 'no冰',
-    method: 'shake',
-    ingredients: [],
-    garnishes: [],
-    totalCost: 0
-  }
-  ingredientInputs.value = [{ id: Date.now(), ingredient: null, amount: 0 }]
 }
 
-const getSearchValue = (input: IngredientInput) => {
-  if (showIngredientDropdown.value === input.id) {
-    return ingredientSearchQuery.value
-  }
-  return input.ingredient?.name || ''
-}
 
-const searchInputValue = computed({
-  get: () => ingredientSearchQuery.value,
-  set: (value: string) => {
-    ingredientSearchQuery.value = value
-  }
-})
 
 const openRecipeDialog = (recipe: Recipe) => {
   if (recipe.status === 'draft') {
@@ -219,13 +91,6 @@ const closeEditDialog = () => {
   selectedRecipe.value = null
 }
 
-// Add this computed property for edit form cost calculation
-const editFormTotalCost = computed(() => {
-  return ingredientInputs.value.reduce((total, input) => {
-    if (!input.ingredient || !input.amount) return total
-    return total + (input.amount * input.ingredient.unitPrice)
-  }, 0)
-})
 </script>
 
 <template>

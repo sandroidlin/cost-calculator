@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { defineProps, defineEmits, computed } from 'vue'
-import type { CompoundIngredient, SingleIngredient } from '@/stores/ingredients'
+import type { CompoundIngredient } from '@/stores/ingredients'
 import { useIngredientsStore } from '@/stores/ingredients'
 import { storeToRefs } from 'pinia'
 
@@ -32,9 +32,6 @@ const ingredientDetails = computed(() => {
   }).filter((item): item is NonNullable<typeof item> => item !== null)
 })
 
-const totalPrice = computed(() => {
-  return ingredientDetails.value.reduce((sum, item) => sum + item.totalPrice, 0)
-})
 </script>
 
 <template>
