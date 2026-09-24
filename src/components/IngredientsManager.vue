@@ -2,13 +2,20 @@
 import { ref, computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useIngredientsStore } from '@/stores/ingredients'
-import type { Ingredient, SingleIngredient, CompoundIngredient, UnitType, CategoryType } from '@/stores/ingredients'
-import { UNIT_STEPS, CATEGORIES } from '@/stores/ingredients'
+import type {
+  Ingredient,
+  SingleIngredient,
+  CompoundIngredient,
+  CategoryType,
+} from '@/stores/ingredients'
+import { CATEGORIES } from '@/stores/ingredients'
 import SingleIngredientForm from './SingleIngredientForm.vue'
 import CompoundIngredientForm from './CompoundIngredientForm.vue'
 import SingleIngredientDetailDialog from './SingleIngredientDetailDialog.vue'
 import CompoundIngredientDetailDialog from './CompoundIngredientDetailDialog.vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const ingredientsStore = useIngredientsStore()
 const { ingredients } = storeToRefs(ingredientsStore)
 
@@ -29,7 +36,7 @@ const formData = ref<Omit<SingleIngredient, 'id' | 'type' | 'unitPrice'>>({
   category: '基酒',
   amount: 0,
   unit: 'ml',
-  totalPrice: 0
+  totalPrice: 0,
 })
 
 const editingIngredient = ref<Ingredient>({
@@ -40,14 +47,7 @@ const editingIngredient = ref<Ingredient>({
   amount: 0,
   unit: 'ml',
   totalPrice: 0,
-  unitPrice: 0
-})
-
-const unitOptions: UnitType[] = ['ml', 'g', 'dash', '份']
-
-const calculatedUnitPrice = computed(() => {
-  if (!formData.value.amount || !formData.value.totalPrice) return 0
-  return Math.round((formData.value.totalPrice / formData.value.amount) * 100) / 100
+  unitPrice: 0,
 })
 
 const searchQuery = ref('')
@@ -59,12 +59,12 @@ const filteredIngredients = computed(() => {
   let filtered = ingredients.value
 
   if (selectedCategory.value !== '全部') {
-    filtered = filtered.filter(ing => ing.category === selectedCategory.value)
+    filtered = filtered.filter((ing) => ing.category === selectedCategory.value)
   }
 
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(ing => ing.name.toLowerCase().includes(query))
+    filtered = filtered.filter((ing) => ing.name.toLowerCase().includes(query))
   }
 
   return filtered
@@ -76,9 +76,7 @@ const paginatedIngredients = computed(() => {
   return filteredIngredients.value.slice(startIndex, endIndex)
 })
 
-const totalPages = computed(() => 
-  Math.ceil(filteredIngredients.value.length / itemsPerPage)
-)
+const totalPages = computed(() => Math.ceil(filteredIngredients.value.length / itemsPerPage))
 
 const getPageButtons = computed(() => {
   const totalPagesCount = totalPages.value
@@ -127,20 +125,18 @@ const getIngredientUnit = (ingredient: Ingredient): string => {
   return ingredient.type === '單一材料' ? ingredient.unit : ingredient.mainUnit
 }
 
-const getIngredientAmount = (ingredient: Ingredient): number => {
-  return ingredient.type === '單一材料' ? ingredient.amount : ingredient.totalAmount
-}
-
 const handleSubmit = (ingredient: SingleIngredient | CompoundIngredient) => {
   if (ingredient.type === '單一材料') {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, type, unitPrice, ...rest } = ingredient
     ingredientsStore.addSingleIngredient(rest)
   } else {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, type, totalAmount, totalPrice, unitPrice, ...rest } = ingredient
     ingredientsStore.addCompoundIngredient(rest)
   }
-  
-  notificationMessage.value = `${ingredient.name}已成功加入材料資料庫`
+
+  notificationMessage.value = t('ingredient.addedSuccess', { name: ingredient.name })
   showNotification.value = true
   setTimeout(() => {
     showNotification.value = false
@@ -154,7 +150,7 @@ const handleDelete = (id: number) => {
   try {
     ingredientsStore.removeIngredient(id)
     showDialog.value = false
-    notificationMessage.value = '材料已成功刪除'
+    notificationMessage.value = t('ingredient.deletedSuccess')
     showNotification.value = true
     setTimeout(() => {
       showNotification.value = false
@@ -168,34 +164,6 @@ const handleDelete = (id: number) => {
       }, 3000)
     }
   }
-}
-
-const handleEdit = (ingredient: Ingredient) => {
-  ingredientsStore.updateIngredient(ingredient)
-  showDialog.value = false
-  notificationMessage.value = '材料已成功更新'
-  showNotification.value = true
-  setTimeout(() => {
-    showNotification.value = false
-  }, 3000)
-}
-
-const incrementAmount = () => {
-  formData.value.amount += UNIT_STEPS[formData.value.unit]
-}
-
-const decrementAmount = () => {
-  const newAmount = formData.value.amount - UNIT_STEPS[formData.value.unit]
-  formData.value.amount = Math.max(0, newAmount)
-}
-
-const incrementTotalPrice = () => {
-  formData.value.totalPrice = Math.round((formData.value.totalPrice + 10) * 100) / 100
-}
-
-const decrementTotalPrice = () => {
-  const newPrice = Math.round((formData.value.totalPrice - 10) * 100) / 100
-  formData.value.totalPrice = Math.max(0, newPrice)
 }
 
 const openIngredientDialog = (ingredient: Ingredient) => {
@@ -215,16 +183,8 @@ const closeCreateDialog = () => {
     category: '基酒',
     amount: 0,
     unit: 'ml',
-    totalPrice: 0
+    totalPrice: 0,
   }
-}
-
-const openEditDialog = () => {
-  if (!selectedIngredient.value) return
-  
-  editingIngredient.value = { ...selectedIngredient.value }
-  showEditDialog.value = true
-  showDialog.value = false
 }
 
 const closeEditDialog = () => {
@@ -237,7 +197,7 @@ const closeEditDialog = () => {
     amount: 0,
     unit: 'ml',
     totalPrice: 0,
-    unitPrice: 0
+    unitPrice: 0,
   }
 }
 
@@ -254,7 +214,7 @@ const saveEdit = (updatedIngredient: Ingredient) => {
 
   ingredientsStore.updateIngredient(updatedIngredient)
 
-  notificationMessage.value = `${updatedIngredient.name}已成功更新`
+  notificationMessage.value = t('ingredient.updatedSuccess', { name: updatedIngredient.name })
   showNotification.value = true
   setTimeout(() => {
     showNotification.value = false
@@ -277,35 +237,30 @@ const handleEditIngredient = (ingredient: Ingredient) => {
 <template>
   <div class="ingredients-manager">
     <div class="header">
-      <h2>材料一覽</h2>
+      <h2>{{ $t('nav.ingredients') }}</h2>
       <div class="button-group">
         <button class="add-btn" @click="showCompoundIngredientForm = true">
-            <span class="plus-icon">+</span> 新增複合材料 
+          <span class="plus-icon">+</span> {{ $t('ingredient.addCompoundIngredient') }}
         </button>
         <button class="add-btn" @click="showCreateDialog = true">
-            <span class="plus-icon">+</span> 新增單一材料 
+          <span class="plus-icon">+</span> {{ $t('ingredient.addSingleIngredient') }}
         </button>
       </div>
     </div>
 
     <div class="search-bar">
-      <input 
-        type="text"
-        v-model="searchQuery"
-        placeholder="搜尋材料..."
-        class="search-input"
-      >
+      <input type="text" v-model="searchQuery" :placeholder="$t('ingredient.searchPlaceholder')" class="search-input" />
     </div>
 
     <div class="category-tabs">
-      <button 
+      <button
         :class="['tab-btn', { active: selectedCategory === '全部' }]"
         @click="selectedCategory = '全部'"
       >
-        全部
+        {{ $t('ingredient.all') }}
       </button>
-      <button 
-        v-for="category in CATEGORIES" 
+      <button
+        v-for="category in CATEGORIES"
         :key="category"
         :class="['tab-btn', { active: selectedCategory === category }]"
         @click="selectedCategory = category"
@@ -315,8 +270,8 @@ const handleEditIngredient = (ingredient: Ingredient) => {
     </div>
 
     <div class="ingredients-grid">
-      <div 
-        v-for="ingredient in paginatedIngredients" 
+      <div
+        v-for="ingredient in paginatedIngredients"
         :key="ingredient.id"
         class="ingredient-item"
         @click="openIngredientDialog(ingredient)"
@@ -333,34 +288,34 @@ const handleEditIngredient = (ingredient: Ingredient) => {
 
     <!-- Update pagination controls -->
     <div v-if="totalPages > 1" class="pagination">
-      <button 
+      <button
         class="page-btn nav-btn"
         :disabled="currentPage === 1"
         @click="changePage(currentPage - 1)"
-        aria-label="Previous page"
+        :aria-label="$t('ingredient.previousPage')"
       >
         ←
       </button>
-      <button 
-        v-for="pageNum in getPageButtons" 
+      <button
+        v-for="pageNum in getPageButtons"
         :key="pageNum"
         :class="[
           'page-btn',
           {
-            'active': currentPage === pageNum,
-            'ellipsis': pageNum === '...'
-          }
+            active: currentPage === pageNum,
+            ellipsis: pageNum === '...',
+          },
         ]"
         @click="pageNum !== '...' && changePage(pageNum as number)"
         :disabled="pageNum === '...'"
       >
         {{ pageNum }}
       </button>
-      <button 
+      <button
         class="page-btn nav-btn"
         :disabled="currentPage === totalPages"
         @click="changePage(currentPage + 1)"
-        aria-label="Next page"
+        :aria-label="$t('ingredient.nextPage')"
       >
         →
       </button>
@@ -417,11 +372,7 @@ const handleEditIngredient = (ingredient: Ingredient) => {
     />
 
     <!-- Notification -->
-    <div 
-      v-if="showNotification" 
-      class="notification"
-      @click="showNotification = false"
-    >
+    <div v-if="showNotification" class="notification" @click="showNotification = false">
       {{ notificationMessage }}
     </div>
   </div>
@@ -705,4 +656,4 @@ const handleEditIngredient = (ingredient: Ingredient) => {
   font-weight: bold;
   line-height: 1;
 }
-</style> 
+</style>

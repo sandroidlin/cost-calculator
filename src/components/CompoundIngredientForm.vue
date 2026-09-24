@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, defineProps, defineEmits } from 'vue'
-import type { CompoundIngredient, SingleIngredient, UnitType, CategoryType, Ingredient } from '@/stores/ingredients'
+import type { CompoundIngredient, UnitType, Ingredient } from '@/stores/ingredients'
 import { CATEGORIES } from '@/stores/ingredients'
 import { useIngredientsStore } from '@/stores/ingredients'
 import { storeToRefs } from 'pinia'
@@ -22,34 +22,36 @@ const { ingredients } = storeToRefs(ingredientsStore)
 // Change this to allow all ingredients
 const availableIngredients = computed(() => ingredients.value)
 
-const ingredient = ref<Omit<CompoundIngredient, 'id' | 'type' | 'totalAmount' | 'totalPrice' | 'unitPrice'>>({
+const ingredient = ref<
+  Omit<CompoundIngredient, 'id' | 'type' | 'totalAmount' | 'totalPrice' | 'unitPrice'>
+>({
   name: props.initialIngredient?.name || '',
   mainUnit: props.initialIngredient?.mainUnit || 'ml',
   category: props.initialIngredient?.category || '其他',
   ingredients: props.initialIngredient?.ingredients || [],
-  instructions: props.initialIngredient?.instructions || ''
+  instructions: props.initialIngredient?.instructions || '',
 })
 
 const unitOptions: UnitType[] = ['ml', 'g', 'dash', '份']
 const categoryOptions = CATEGORIES
 
-const ingredientInputs = ref<Array<{ id: number, ingredient: Ingredient | null, amount: number }>>([
-  { id: Date.now(), ingredient: null, amount: 0 }
+const ingredientInputs = ref<Array<{ id: number; ingredient: Ingredient | null; amount: number }>>([
+  { id: Date.now(), ingredient: null, amount: 0 },
 ])
 
 const overrideTotalAmount = ref(props.initialIngredient?.totalAmount || 0)
 
 // Initialize ingredient inputs if editing an existing compound ingredient
 if (props.initialIngredient && props.mode === 'edit') {
-  ingredientInputs.value = props.initialIngredient.ingredients.map(ing => {
-    const ingredient = availableIngredients.value.find(i => i.id === ing.ingredientId)
+  ingredientInputs.value = props.initialIngredient.ingredients.map((ing) => {
+    const ingredient = availableIngredients.value.find((i) => i.id === ing.ingredientId)
     return {
       id: ing.ingredientId,
       ingredient: ingredient || null,
-      amount: ing.amount
+      amount: ing.amount,
     }
   })
-  
+
   // Add an empty input if there are no ingredients
   if (ingredientInputs.value.length === 0) {
     ingredientInputs.value.push({ id: Date.now(), ingredient: null, amount: 0 })
@@ -59,7 +61,8 @@ if (props.initialIngredient && props.mode === 'edit') {
 const calculatedTotalAmount = computed(() => {
   return ingredientInputs.value.reduce((total, input) => {
     if (!input.ingredient || !input.amount) return total
-    const unit = input.ingredient.type === '單一材料' ? input.ingredient.unit : input.ingredient.mainUnit
+    const unit =
+      input.ingredient.type === '單一材料' ? input.ingredient.unit : input.ingredient.mainUnit
     if (unit !== ingredient.value.mainUnit) return total
     return total + input.amount
   }, 0)
@@ -72,7 +75,7 @@ const totalAmount = computed(() => {
 const totalCost = computed(() => {
   return ingredientInputs.value.reduce((total, input) => {
     if (!input.ingredient || !input.amount) return total
-    return total + (input.amount * input.ingredient.unitPrice)
+    return total + input.amount * input.ingredient.unitPrice
   }, 0)
 })
 
@@ -85,16 +88,16 @@ const addNewIngredientInput = () => {
   ingredientInputs.value.push({
     id: Date.now(),
     ingredient: null,
-    amount: 0
+    amount: 0,
   })
 }
 
 const removeIngredientInput = (id: number) => {
-  ingredientInputs.value = ingredientInputs.value.filter(input => input.id !== id)
+  ingredientInputs.value = ingredientInputs.value.filter((input) => input.id !== id)
 }
 
-const updateIngredient = (id: number, data: { ingredient: Ingredient | null, amount: number }) => {
-  const input = ingredientInputs.value.find(i => i.id === id)
+const updateIngredient = (id: number, data: { ingredient: Ingredient | null; amount: number }) => {
+  const input = ingredientInputs.value.find((i) => i.id === id)
   if (input) {
     input.ingredient = data.ingredient
     input.amount = data.amount
@@ -105,10 +108,10 @@ const saveIngredient = () => {
   if (!ingredient.value.name) return
 
   const validIngredients = ingredientInputs.value
-    .filter(input => input.ingredient && input.amount)
-    .map(input => ({
+    .filter((input) => input.ingredient && input.amount)
+    .map((input) => ({
       ingredientId: input.ingredient!.id,
-      amount: input.amount
+      amount: input.amount,
     }))
 
   if (validIngredients.length === 0) return
@@ -120,7 +123,7 @@ const saveIngredient = () => {
     ingredients: validIngredients,
     totalAmount: totalAmount.value,
     totalPrice: totalCost.value,
-    unitPrice: unitPrice.value
+    unitPrice: unitPrice.value,
   })
 }
 </script>
@@ -129,21 +132,21 @@ const saveIngredient = () => {
   <div class="dialog-overlay">
     <div class="dialog">
       <div class="dialog-header">
-        <h2>{{ mode === 'create' ? '新增複合材料' : '編輯複合材料' }}</h2>
+        <h2>{{ mode === 'create' ? $t('ingredient.newCompoundIngredient') : $t('ingredient.editCompoundIngredient') }}</h2>
         <button class="close-btn" @click="emit('cancel')">✕</button>
       </div>
-      
+
       <div class="dialog-content">
         <div class="section">
-          <h3 class="section-title">基本資料</h3>
+          <h3 class="section-title">{{ $t('ingredient.basicInfo') }}</h3>
           <div class="form-section">
             <div class="form-group">
-              <label>名稱</label>
-              <input v-model="ingredient.name" type="text" required>
+              <label>{{ $t('ingredient.name') }}</label>
+              <input v-model="ingredient.name" type="text" required />
             </div>
 
             <div class="form-group">
-              <label>分類</label>
+              <label>{{ $t('ingredient.category') }}</label>
               <select v-model="ingredient.category">
                 <option v-for="category in categoryOptions" :key="category" :value="category">
                   {{ category }}
@@ -152,7 +155,7 @@ const saveIngredient = () => {
             </div>
 
             <div class="form-group">
-              <label>主要單位</label>
+              <label>{{ $t('ingredient.mainUnit') }}</label>
               <select v-model="ingredient.mainUnit">
                 <option v-for="unit in unitOptions" :key="unit" :value="unit">
                   {{ unit }}
@@ -161,33 +164,29 @@ const saveIngredient = () => {
             </div>
 
             <div class="form-group">
-              <label>總量（若與材料總和不同）</label>
+              <label>{{ $t('ingredient.totalAmountDifferent') }}</label>
               <div class="amount-input">
-                <input 
+                <input
                   v-model.number="overrideTotalAmount"
                   type="number"
                   min="0"
                   step="0.1"
-                  :placeholder="'輸入總' + ingredient.mainUnit + '數'"
-                >
+                  :placeholder="$t('ingredient.enterTotalAmount', { unit: ingredient.mainUnit })"
+                />
                 <span class="unit">{{ ingredient.mainUnit }}</span>
               </div>
               <div class="help-text" v-if="calculatedTotalAmount">
-                材料總和: {{ calculatedTotalAmount.toFixed(2) }}{{ ingredient.mainUnit }}
+                {{ $t('ingredient.sumOfIngredients') }}: {{ calculatedTotalAmount.toFixed(2) }}{{ ingredient.mainUnit }}
               </div>
             </div>
           </div>
         </div>
 
         <div class="section">
-          <h3 class="section-title">材料清單</h3>
+          <h3 class="section-title">{{ $t('ingredient.ingredientList') }}</h3>
           <div class="form-section">
             <div class="ingredients-list">
-              <div 
-                v-for="input in ingredientInputs" 
-                :key="input.id"
-                class="ingredient-input"
-              >
+              <div v-for="input in ingredientInputs" :key="input.id" class="ingredient-input">
                 <IngredientInput
                   :ingredients="availableIngredients"
                   :show-delete="ingredientInputs.length > 1"
@@ -197,25 +196,21 @@ const saveIngredient = () => {
                   @remove="() => removeIngredientInput(input.id)"
                 />
               </div>
-              <button 
-                type="button"
-                class="add-ingredient-btn"
-                @click="addNewIngredientInput"
-              >
-                + 新增其他材料
+              <button type="button" class="add-ingredient-btn" @click="addNewIngredientInput">
+                {{ $t('ingredient.addOtherIngredients') }}
               </button>
             </div>
           </div>
         </div>
 
         <div class="section">
-          <h3 class="section-title">作法</h3>
+          <h3 class="section-title">{{ $t('ingredient.instructions') }}</h3>
           <div class="form-section">
             <div class="form-group">
-              <textarea 
-                v-model="ingredient.instructions" 
-                rows="4" 
-                placeholder="請輸入製作步驟..."
+              <textarea
+                v-model="ingredient.instructions"
+                rows="4"
+                :placeholder="$t('ingredient.enterInstructions')"
               ></textarea>
             </div>
           </div>
@@ -225,22 +220,27 @@ const saveIngredient = () => {
       <div class="dialog-footer">
         <div class="cost-info">
           <div class="info-item">
-            <span class="label">總量</span>
-            <span class="highlight-value">{{ totalAmount.toFixed(2) }}{{ ingredient.mainUnit }}</span>
+            <span class="label">{{ $t('ingredient.totalAmount') }}</span>
+            <span class="highlight-value"
+              >{{ totalAmount.toFixed(2) }}{{ ingredient.mainUnit }}</span
+            >
           </div>
           <div class="info-item">
-            <span class="label">平均成本</span>
+            <span class="label">{{ $t('ingredient.averageCost') }}</span>
             <span class="value">${{ unitPrice.toFixed(2) }}/{{ ingredient.mainUnit }}</span>
           </div>
         </div>
         <div class="button-group">
-          <button class="cancel-btn" @click="emit('cancel')">取消</button>
-          <button 
-            class="save-btn" 
+          <button class="cancel-btn" @click="emit('cancel')">{{ $t('common.cancel') }}</button>
+          <button
+            class="save-btn"
             @click="saveIngredient"
-            :disabled="!ingredient.name || !ingredientInputs.some(input => input.ingredient && input.amount)"
+            :disabled="
+              !ingredient.name ||
+              !ingredientInputs.some((input) => input.ingredient && input.amount)
+            "
           >
-            {{ mode === 'create' ? '新增複合材料' : '儲存變更' }}
+            {{ mode === 'create' ? $t('ingredient.newCompoundIngredient') : $t('ingredient.saveChanges') }}
           </button>
         </div>
       </div>
@@ -501,4 +501,4 @@ const saveIngredient = () => {
   font-size: 0.75rem;
   color: #666;
 }
-</style> 
+</style>

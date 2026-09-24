@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, defineProps, defineEmits } from 'vue'
-import type { SingleIngredient, UnitType, CategoryType } from '@/stores/ingredients'
-import { UNIT_STEPS, CATEGORIES } from '@/stores/ingredients'
+import type { SingleIngredient, UnitType } from '@/stores/ingredients'
+import { CATEGORIES } from '@/stores/ingredients'
 
 const props = defineProps<{
   initialIngredient?: SingleIngredient
@@ -18,7 +18,7 @@ const ingredient = ref<Omit<SingleIngredient, 'id' | 'type' | 'unitPrice'>>({
   unit: props.initialIngredient?.unit || 'ml',
   amount: props.initialIngredient?.amount || 0,
   totalPrice: props.initialIngredient?.totalPrice || 0,
-  category: props.initialIngredient?.category || '其他'
+  category: props.initialIngredient?.category || '其他',
 })
 
 const unitOptions: UnitType[] = ['ml', 'g', 'dash', '份']
@@ -36,7 +36,7 @@ const saveIngredient = () => {
     ...ingredient.value,
     type: '單一材料' as const,
     id: props.initialIngredient?.id || Date.now(),
-    unitPrice: calculatedUnitPrice.value
+    unitPrice: calculatedUnitPrice.value,
   })
 }
 </script>
@@ -48,11 +48,11 @@ const saveIngredient = () => {
         <h2>{{ mode === 'create' ? '新增單一材料' : '編輯單一材料' }}</h2>
         <button class="close-btn" @click="emit('cancel')">✕</button>
       </div>
-      
+
       <div class="dialog-content">
         <div class="form-group">
           <label>名稱</label>
-          <input v-model="ingredient.name" type="text" required>
+          <input v-model="ingredient.name" type="text" required />
         </div>
 
         <div class="form-group">
@@ -67,13 +67,7 @@ const saveIngredient = () => {
         <div class="form-group">
           <label>數量與單位</label>
           <div class="amount-unit-group">
-            <input 
-              v-model.number="ingredient.amount"
-              type="number"
-              min="0"
-              step="1"
-              required
-            >
+            <input v-model.number="ingredient.amount" type="number" min="0" step="1" required />
             <select v-model="ingredient.unit">
               <option v-for="unit in unitOptions" :key="unit" :value="unit">
                 {{ unit }}
@@ -86,13 +80,13 @@ const saveIngredient = () => {
           <label>總價</label>
           <div class="price-input">
             <span class="currency">$</span>
-            <input 
+            <input
               v-model.number="ingredient.totalPrice"
               type="number"
               min="0"
               step="0.1"
               required
-            >
+            />
           </div>
         </div>
       </div>
@@ -101,17 +95,19 @@ const saveIngredient = () => {
         <div class="cost-info">
           <div class="info-item">
             <span class="label">成本</span>
-            <span class="highlight-value">${{ calculatedUnitPrice.toFixed(2) }}/{{ ingredient.unit }}</span>
+            <span class="highlight-value"
+              >${{ calculatedUnitPrice.toFixed(2) }}/{{ ingredient.unit }}</span
+            >
           </div>
         </div>
         <div class="button-group">
           <button class="cancel-btn" @click="emit('cancel')">取消</button>
-          <button 
-            class="save-btn" 
+          <button
+            class="save-btn"
             @click="saveIngredient"
             :disabled="!ingredient.name || !ingredient.amount || !ingredient.totalPrice"
           >
-            {{ mode === 'create' ? '新增材料' : '儲存變更' }}
+            {{ mode === 'create' ? $t('ingredient.newIngredient') : $t('common.save') }}
           </button>
         </div>
       </div>
@@ -319,4 +315,4 @@ const saveIngredient = () => {
   background: #ccc;
   cursor: not-allowed;
 }
-</style> 
+</style>

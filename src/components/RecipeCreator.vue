@@ -6,6 +6,9 @@ import { useRecipesStore } from '@/stores/recipes'
 import type { Ingredient, UnitType } from '@/stores/ingredients'
 import type { RecipeIngredient, IceType } from '@/stores/recipes'
 import { ICE_PRICES } from '@/stores/recipes'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const ingredientsStore = useIngredientsStore()
 const recipesStore = useRecipesStore()
@@ -21,7 +24,7 @@ const newRecipe = ref({
   ice: '' as IceType,
   method: 'shake' as const,
   garnishes: [] as RecipeIngredient[],
-  ingredients: [] as RecipeIngredient[]
+  ingredients: [] as RecipeIngredient[],
 })
 
 const searchQuery = ref('')
@@ -31,26 +34,22 @@ const amount = ref('')
 const selectedUnit = ref(unitOptions[0])
 
 const filteredIngredients = computed(() => {
-  return ingredients.value.filter((ing: Ingredient) => 
-    ing.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+  return ingredients.value.filter((ing: Ingredient) =>
+    ing.name.toLowerCase().includes(searchQuery.value.toLowerCase()),
   )
 })
 
 const recipeTotalCost = computed(() => {
   const ingredientsCost = newRecipe.value.ingredients.reduce((total, ing) => {
-    return total + (ing.unitPrice * ing.amount)
+    return total + ing.unitPrice * ing.amount
   }, 0)
-  
+
   const iceCost = newRecipe.value.ice ? ICE_PRICES[newRecipe.value.ice] : 0
   return ingredientsCost + iceCost
 })
 
 const getIngredientUnit = (ingredient: Ingredient): string => {
   return ingredient.type === '單一材料' ? ingredient.unit : ingredient.mainUnit
-}
-
-const getIngredientAmount = (ingredient: Ingredient): number => {
-  return ingredient.type === '單一材料' ? ingredient.amount : ingredient.totalAmount
 }
 
 const addIngredientToRecipe = () => {
@@ -60,14 +59,14 @@ const addIngredientToRecipe = () => {
   if (!ingredient) return
 
   const unit = getIngredientUnit(ingredient)
-  
+
   newRecipe.value.ingredients.push({
     id: Date.now(),
     ingredientId: ingredient.id,
     amount: parseFloat(amount.value),
     name: ingredient.name,
     unit,
-    unitPrice: ingredient.unitPrice
+    unitPrice: ingredient.unitPrice,
   })
 
   // Reset selection
@@ -78,7 +77,13 @@ const addIngredientToRecipe = () => {
 }
 
 const removeIngredientFromRecipe = (id: number) => {
-  newRecipe.value.ingredients = newRecipe.value.ingredients.filter(ing => ing.id !== id)
+  newRecipe.value.ingredients = newRecipe.value.ingredients.filter((ing) => ing.id !== id)
+}
+
+const selectIngredient = (ingredient: Ingredient) => {
+  selectedIngredient.value = ingredient.id
+  showDropdown.value = false
+  searchQuery.value = ingredient.name
 }
 
 const saveRecipe = () => {
@@ -92,7 +97,7 @@ const saveRecipe = () => {
     method: newRecipe.value.method,
     ingredients: [...newRecipe.value.ingredients],
     garnishes: [...newRecipe.value.garnishes],
-    totalCost: recipeTotalCost.value
+    totalCost: recipeTotalCost.value,
   })
 
   // Reset form
@@ -103,61 +108,61 @@ const saveRecipe = () => {
     ice: '' as IceType,
     method: 'shake',
     garnishes: [],
-    ingredients: []
+    ingredients: [],
   }
 }
 </script>
 
 <template>
   <div class="recipe-creator">
-    <h2>新增酒譜</h2>
+    <h2>{{ $t('recipe.newRecipe') }}</h2>
 
     <form @submit.prevent="saveRecipe" class="recipe-form">
       <div class="basic-info">
-        <h3>基本資訊</h3>
+        <h3>{{ $t('recipe.basicInfo') }}</h3>
         <div class="form-group">
-          <label for="recipeName">酒名：</label>
+          <label for="recipeName">{{ $t('recipe.recipeName') }}：</label>
           <input
             id="recipeName"
             v-model="newRecipe.name"
             type="text"
             required
-            placeholder="請輸入姓名"
-          >
+            :placeholder="$t('recipe.enterRecipeName')"
+          />
         </div>
 
         <div class="form-group">
-          <label for="bartenderName">調酒師名：</label>
+          <label for="bartenderName">{{ $t('recipe.bartenderName') }}：</label>
           <input
             id="bartenderName"
             v-model="newRecipe.bartenderName"
             type="text"
             required
-            placeholder="請輸入姓名"
-          >
+            :placeholder="$t('recipe.enterBartenderName')"
+          />
         </div>
       </div>
 
       <div class="ingredients-section">
-        <h3>酒體材料</h3>
-        
+        <h3>{{ $t('recipe.bodyIngredients') }}</h3>
+
         <div class="ingredient-selector">
           <div class="form-group ingredient-search">
-            <label>材料：</label>
+            <label>{{ $t('recipe.ingredient') }}：</label>
             <div class="dropdown-container">
               <input
                 v-model="searchQuery"
                 @focus="showDropdown = true"
                 type="text"
-                placeholder="請選擇材料"
-              >
+                :placeholder="$t('recipe.selectIngredientPlaceholder')"
+              />
               <div v-if="showDropdown" class="dropdown-list">
                 <div
                   v-for="ingredient in filteredIngredients"
                   :key="ingredient.id"
                   class="dropdown-item"
-                  :class="{ 'selected': selectedIngredient === ingredient.id }"
-                  @click="selectedIngredient = ingredient.id; showDropdown = false; searchQuery = ingredient.name"
+                  :class="{ selected: selectedIngredient === ingredient.id }"
+                  @click="selectIngredient(ingredient)"
                 >
                   {{ ingredient.name }}
                 </div>
@@ -166,13 +171,7 @@ const saveRecipe = () => {
           </div>
 
           <div class="form-group amount-input">
-            <input
-              v-model="amount"
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="輸入數量"
-            >
+            <input v-model="amount" type="number" step="0.01" min="0" :placeholder="$t('recipe.enterAmountPlaceholder')" />
           </div>
 
           <div class="form-group unit-select">
@@ -183,13 +182,13 @@ const saveRecipe = () => {
             </select>
           </div>
 
-          <button 
-            type="button" 
+          <button
+            type="button"
             @click="addIngredientToRecipe"
             :disabled="!selectedIngredient || !amount"
             class="add-ingredient-btn"
           >
-            新增材料
+            {{ $t('recipe.addIngredientBtn') }}
           </button>
         </div>
 
@@ -197,10 +196,10 @@ const saveRecipe = () => {
           <table v-if="newRecipe.ingredients.length">
             <thead>
               <tr>
-                <th>材料</th>
-                <th>數量</th>
-                <th>成本</th>
-                <th>操作</th>
+                <th>{{ $t('recipe.ingredient') }}</th>
+                <th>{{ $t('recipe.quantity') }}</th>
+                <th>{{ $t('recipe.cost') }}</th>
+                <th>{{ $t('recipe.operation') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -209,37 +208,32 @@ const saveRecipe = () => {
                 <td>{{ ingredient.amount }} {{ ingredient.unit }}</td>
                 <td>${{ (ingredient.amount * ingredient.unitPrice).toFixed(2) }}</td>
                 <td>
-                  <button 
-                    @click="removeIngredientFromRecipe(ingredient.id)" 
+                  <button
+                    @click="removeIngredientFromRecipe(ingredient.id)"
                     class="delete-btn"
                     type="button"
                   >
-                    刪除
+                    {{ $t('recipe.deleteBtn') }}
                   </button>
                 </td>
               </tr>
             </tbody>
           </table>
-          <p v-else>No ingredients added to recipe yet.</p>
+          <p v-else>{{ $t('recipe.noIngredientsAdded') }}</p>
         </div>
       </div>
 
       <div class="style-section">
-        <h3>造型</h3>
+        <h3>{{ $t('recipe.style') }}</h3>
         <div class="form-group">
-          <label for="glass">杯子：</label>
-          <input
-            id="glass"
-            v-model="newRecipe.glass"
-            type="text"
-            required
-          >
+          <label for="glass">{{ $t('recipe.glass') }}：</label>
+          <input id="glass" v-model="newRecipe.glass" type="text" required />
         </div>
 
         <div class="form-group">
-          <label for="ice">冰塊：</label>
+          <label for="ice">{{ $t('recipe.ice') }}：</label>
           <select id="ice" v-model="newRecipe.ice" required>
-            <option value="">請選擇冰塊大小</option>
+            <option value="">{{ $t('recipe.selectIceSize') }}</option>
             <option v-for="ice in iceOptions" :key="ice" :value="ice">
               {{ ice }}
             </option>
@@ -247,25 +241,21 @@ const saveRecipe = () => {
         </div>
 
         <div class="form-group">
-          <label for="garnish">裝飾物：</label>
-          <input
-            id="garnish"
-            v-model="newRecipe.garnishes[0].name"
-            type="text"
-          >
+          <label for="garnish">{{ $t('recipe.garnish') }}：</label>
+          <input id="garnish" v-model="newRecipe.garnishes[0].name" type="text" />
         </div>
       </div>
 
       <div class="sticky-footer">
         <div class="total-cost">
-          成本：<strong>${{ recipeTotalCost.toFixed(2) }}</strong>
+          {{ $t('recipe.totalCost') }}：<strong>${{ recipeTotalCost.toFixed(2) }}</strong>
         </div>
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           class="save-recipe-btn"
           :disabled="!newRecipe.name || newRecipe.ingredients.length === 0"
         >
-          新增酒譜
+          {{ $t('recipe.addRecipeBtn') }}
         </button>
       </div>
     </form>
@@ -408,7 +398,8 @@ table {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-th, td {
+th,
+td {
   padding: 1rem;
   text-align: left;
   border-bottom: 1px solid #eee;
@@ -483,4 +474,4 @@ td {
   background: #ccc;
   cursor: not-allowed;
 }
-</style> 
+</style>

@@ -1,3 +1,4 @@
+<!-- eslint-disable vue/multi-word-component-names -->
 <script setup lang="ts">
 import DataImportExport from './DataImportExport.vue'
 </script>
@@ -41,4 +42,4 @@ import DataImportExport from './DataImportExport.vue'
     padding-right: 40px;
   }
 }
-</style> 
+</style>
